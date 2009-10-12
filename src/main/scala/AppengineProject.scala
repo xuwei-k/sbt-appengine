@@ -46,6 +46,35 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
             appengineClasspath, List("-v") ++ opts ++ 
             classes.get.map(_.projectRelativePath)) dependsOn(compile)
 
+  lazy val devAppserverStart = task { args => devAppserverStartTask(args)}
+  def devAppserverOptions:Seq[String] = Nil
+
+  import java.io.File
+  private var devAppserverInstance:Option[Process] = None
+  def devAppserverStartTask(opts:Seq[String]) = task {
+    if (devAppserverInstance.isDefined) {
+      Some("This instance of dev_appserver is already running.")
+    } else {
+      val executable = new File(new File(System.getProperty("java.home"), "bin"),"java").getAbsolutePath
+      val options =
+        List("-ea", "-cp", appengineToolsApiJar.absolutePath,
+             "com.google.appengine.tools.KickStart",
+             "com.google.appengine.tools.development.DevAppServerMain"
+           ) ::: devAppserverOptions.toList ::: opts.toList ::: List("target/webapp")
+      val command = (executable :: options).toArray
+      val builder = new java.lang.ProcessBuilder(command : _*)
+      builder.directory(new java.io.File("."))
+      val process = Process(builder)
+      devAppserverInstance = Some(process.run)
+      None
+    }
+  }
+  lazy val devAppserverStop = task {
+    devAppserverInstance.foreach(_.destroy)
+    devAppserverInstance = None
+    None
+  }
+
   override def prepareWebappAction = super.prepareWebappAction dependsOn(enhance)
 
   lazy val appcfg = task { args =>
