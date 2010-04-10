@@ -1,90 +1,93 @@
-import sbt._
+package sbt
+
+import java.io.File
+import sbt.Process._
+
 abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(info) {
-  lazy val appengineSdkRoot = property[String]
+  val servlet = "javax.servlet" % "servlet-api" % "2.5" % "provided"
 
-  val Appengine = Configurations.config("appengine")
-  override def ivyConfigurations: Iterable[Configuration] = super.ivyConfigurations  ++ (Appengine :: Nil)
+  override def unmanagedClasspath = super.unmanagedClasspath +++ appengineClasspath
+
+  def appengineClasspath: PathFinder = appengineApiJarPath
 
 
-  val servlet = "javax.servlet" % "servlet-api" % "2.5" % "provided->default"
+  def appengineApiJarName = "appengine-api-1.0-sdk-" + sdkVersion + ".jar"
+  def appengineApiLabsJarName = "appengine-api-labs-" + sdkVersion + ".jar"
+  def appengineJSR107CacheJarName = "appengine-jsr107cache-" + sdkVersion + ".jar"
+  def jsr107CacheJarName = "jsr107cache-1.1.jar"
 
-  val appEngineApi = "com.google.appengine" % "appengine-api-1.0-sdk" % "1.2.2" % "compile->default"
-  val appEngineOrm = "com.google.appengine.orm" % "datanucleus-appengine" % "1.0.2" % "compile->default"
+  def appengineLibPath = appengineSdkPath / "lib"
+  def appengineLibUserPath = appengineLibPath / "user"
+  def appengineApiJarPath = appengineLibUserPath / appengineApiJarName
+  def appengineApiLabsJarPath = appengineLibUserPath / appengineApiLabsJarName
+  def jsr107cacheJarsPath = appengineLibUserPath / appengineJSR107CacheJarName +++ appengineLibUserPath / jsr107CacheJarName
 
-  val dataNucleusCore = "org.datanucleus" % "datanucleus-core" % "1.1.4" % "compile->default"
-  val dataNucleusJPA = "org.datanucleus" % "datanucleus-jpa" % "1.1.4" % "compile->default"
-  val javaxPersistence = "javax.persistence" % "persistence-api" % "1.0.2" % "compile->default"
-  val javaxJDO2 = "javax.jdo" % "jdo2-api" % "2.3-ea" % "compile->default"
-  val dataNucleusEnhancer = "org.datanucleus" % "datanucleus-enhancer" % "1.1.4" % "appengine->default"
+  def appengineToolsClasspath = (appengineLibPath / "appengine-tools-api.jar") +++ (appengineLibPath / "tools" / "orm" * "datanucleus-enhancer-*.jar")  +++ (appengineLibPath / "tools" / "orm" * "asm-*.jar")
 
-  val appEngineApiStubs = "com.google.appengine" % "appengine-api-1.0-stubs" % "1.2.2" % "test->default"
-  val appEngineApiRuntime = "com.google.appengine" % "appengine-api-1.0-runtime" % "1.2.2" % "test->default"
 
-  override def ivyXML =
-    <dependencies>
-      <dependency org="com.google.appengine.orm" name="datanucleus-appengine" rev="1.0.1">
-        <exclude org="org.datanucleus" module="datanucleus-core"/>
-        <exclude org="org.datanucleus" module="datanucleus-jpa"/>
-      </dependency>
-      <exclude org="junit" module="junit" conf="compile, runtime"/>
-    </dependencies>
+  def appcfgName = "appcfg" + osBatchSuffix
+  def devAppserverName = "dev_appserver" + osBatchSuffix
 
-  val smackRepo = "m2-repository-smack" at "http://maven.reucon.com/public"
-  val mvnsearchRepo = "mvnsearch.org" at "http://www.mvnsearch.org/maven2"
-  val scalaSnapshots = "scala-snapshots" at "http://scala-tools.org/repo-snapshots"
-  val devjavanet = JavaNet1Repository
+  def appcfgPath = appengineSdkPath / "bin" / appcfgName
+  def devAppserverPath = appengineSdkPath / "bin" / devAppserverName
 
-  //
-  lazy val appengineToolsApiJar = Path.fromFile(appengineSdkRoot.value) / "lib" / "appengine-tools-api.jar"
-  def appengineClasspath = fullClasspath(Appengine) +++ compileClasspath +++ appengineToolsApiJar
+  def isWindows = System.getProperty("os.name").startsWith("Windows")
+  def osBatchSuffix = if (isWindows) ".cmd" else ".sh"
 
-  lazy val enhance = datanucleusEnhancerAction()
-  lazy val enhanceCheck = datanucleusEnhancerAction("-checkonly")
-  val classes = (mainCompilePath ** "*.class")
-  def datanucleusEnhancerAction(opts:String*) =
-    runTask(Some("org.datanucleus.enhancer.DataNucleusEnhancer"),
-            appengineClasspath, List("-v") ++ opts ++ 
-            classes.get.map(_.projectRelativePath)) dependsOn(compile)
-
-  lazy val devAppserverStart = task { args => devAppserverStartTask(args)}
-  def devAppserverOptions:Seq[String] = Nil
-
-  import java.io.File
-  private var devAppserverInstance:Option[Process] = None
-  def devAppserverStartTask(opts:Seq[String]) = task {
-    if (devAppserverInstance.isDefined) {
-      Some("This instance of dev_appserver is already running.")
-    } else {
-      val executable = new File(new File(System.getProperty("java.home"), "bin"),"java").getAbsolutePath
-      val options =
-        List("-ea", "-cp", appengineToolsApiJar.absolutePath,
-             "com.google.appengine.tools.KickStart",
-             "com.google.appengine.tools.development.DevAppServerMain"
-           ) ::: devAppserverOptions.toList ::: opts.toList ::: List("target/webapp")
-      val command = (executable :: options).toArray
-      val builder = new java.lang.ProcessBuilder(command : _*)
-      builder.directory(new java.io.File("."))
-      val process = Process(builder)
-      devAppserverInstance = Some(process.run)
-      None
+  def sdkVersion = {
+    val pat = """.*/appengine-api-1.0-sdk-(\d\.\d\.\d)\.jar""".r
+    (appengineLibUserPath * "appengine-api-1.0-sdk-*.jar").get.toList match {
+      case jar::_ => jar.absolutePath match {
+        case pat(version) => version
+        case _ => error("invalid jar file. " + jar)
+      }
+      case _ => error("not found appengine api jar.")
     }
   }
-  lazy val devAppserverStop = task {
-    devAppserverInstance.foreach(_.destroy)
-    devAppserverInstance = None
-    None
+
+  def appengineSdkPath = {
+    val sdk = System.getenv("APPENGINE_SDK_HOME")
+    if (sdk == null) error("You need to set APPENGINE_SDK_HOME")
+    Path.fromFile(new File(sdk))
   }
+
+  def appcfgTask(action: String) = execTask {
+    <x>
+      {appcfgPath.absolutePath} {action}
+    </x>
+  }
+
+  def defaultDevAppserverPort:Option[Int] = None
+  def defaultDevAppserverAddress:Option[Int] = None
+
+  lazy val devAppserver = execTask {
+    <x>
+      {devAppserverPath.absolutePath}
+        {defaultDevAppserverAddress match { case Some(a) => "-a " + a; case None => }}
+        {defaultDevAppserverPort match { case Some(p) => "-p " + p; case None => }}
+        {temporaryWarPath.relativePath}
+    </x>
+  } dependsOn(prepareWebapp) describedAs("start dev_appserver")
+
+}
+
+trait DataNucleus extends AppengineProject {
+  override def appengineClasspath = super.appengineClasspath +++ appengineApiLabsJarPath +++ appengineORMJarsPath
 
   override def prepareWebappAction = super.prepareWebappAction dependsOn(enhance)
 
-  lazy val appcfg = task { args =>
-    runTask(Some("com.google.appengine.tools.admin.AppCfg"),
-            appengineToolsApiJar, args)
-  }
+  def appengineORMJarsPath = appengineLibUserPath / "orm" * "*.jar"
 
-  lazy val appcfgUpdate = task { args =>
-    runTask(Some("com.google.appengine.tools.admin.AppCfg"),
-            appengineToolsApiJar, args ++ List("update", temporaryWarPath.projectRelativePath)) dependsOn(prepareWebapp)
-  }
-
+  lazy val enhance = enhanceAction
+  lazy val enhanceCheck = enhanceCheckAction
+  def enhanceAction = enhanceTask(false) dependsOn(compile) describedAs("Executes ORM enhancement.")
+  def enhanceCheckAction = enhanceTask(true) dependsOn(compile) describedAs("Just check the classes for enhancement status.")
+  def usePersistentApi = "jdo"
+  def enhanceTask(checkonly: Boolean) =
+    runTask(Some("org.datanucleus.enhancer.DataNucleusEnhancer"),
+      appengineToolsClasspath +++ compileClasspath ,
+      List("-v",
+           "-api", usePersistentApi,
+           (if(checkonly) "-checkonly" else "")) ++
+      mainClasses.get.map(_.projectRelativePath))
 }
