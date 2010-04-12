@@ -10,7 +10,6 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
 
   def appengineClasspath: PathFinder = appengineApiJarPath
 
-
   def appengineApiJarName = "appengine-api-1.0-sdk-" + sdkVersion + ".jar"
   def appengineApiLabsJarName = "appengine-api-labs-" + sdkVersion + ".jar"
   def appengineJSR107CacheJarName = "appengine-jsr107cache-" + sdkVersion + ".jar"
@@ -22,7 +21,7 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
   def appengineApiLabsJarPath = appengineLibUserPath / appengineApiLabsJarName
   def jsr107cacheJarsPath = appengineLibUserPath / appengineJSR107CacheJarName +++ appengineLibUserPath / jsr107CacheJarName
 
-  def appengineToolsClasspath = (appengineLibPath / "appengine-tools-api.jar") +++ (appengineLibPath / "tools" / "orm" * "datanucleus-enhancer-*.jar")  +++ (appengineLibPath / "tools" / "orm" * "asm-*.jar")
+  def appengineToolsJarPath = (appengineLibPath / "appengine-tools-api.jar")
 
 
   def appcfgName = "appcfg" + osBatchSuffix
@@ -77,6 +76,7 @@ trait DataNucleus extends AppengineProject {
   override def prepareWebappAction = super.prepareWebappAction dependsOn(enhance)
 
   def appengineORMJarsPath = appengineLibUserPath / "orm" * "*.jar"
+  def appengineORMEnhancerClasspath = (appengineLibPath / "tools" / "orm" * "datanucleus-enhancer-*.jar")  +++ (appengineLibPath / "tools" / "orm" * "asm-*.jar")
 
   lazy val enhance = enhanceAction
   lazy val enhanceCheck = enhanceCheckAction
@@ -85,7 +85,7 @@ trait DataNucleus extends AppengineProject {
   def usePersistentApi = "jdo"
   def enhanceTask(checkonly: Boolean) =
     runTask(Some("org.datanucleus.enhancer.DataNucleusEnhancer"),
-      appengineToolsClasspath +++ compileClasspath ,
+      appengineToolsJarPath +++ appengineORMEnhancerClasspath +++ compileClasspath ,
       List("-v",
            "-api", usePersistentApi,
            (if(checkonly) "-checkonly" else "")) ++
