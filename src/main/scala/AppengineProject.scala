@@ -56,17 +56,57 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
     </x>
   }
 
-  def defaultDevAppserverPort:Option[Int] = None
-  def defaultDevAppserverAddress:Option[Int] = None
+  lazy val javaCmd = (Path.fromFile(new java.io.File(System.getProperty("java.home"))) / "bin" / "java").absolutePath
 
-  lazy val devAppserver = execTask {
-    <x>
-      {devAppserverPath.absolutePath}
-        {defaultDevAppserverAddress match { case Some(a) => "-a " + a; case None => }}
-        {defaultDevAppserverPort match { case Some(p) => "-p " + p; case None => }}
-        {temporaryWarPath.relativePath}
-    </x>
-  } dependsOn(prepareWebapp) describedAs("start dev_appserver")
+  def appengineAgentPath = appengineLibPath / "agent" / "appengine-agent.jar"
+
+  lazy val devAppserverInstance = new DevAppserverRun
+  lazy val devAppserverStart = devAppserverStartAction
+  lazy val devAppserverStop = devAppserverStopAction
+  def devAppserverStartAction = task{ args => devAppserverStartTask(args) dependsOn(prepareWebapp) }
+  def devAppserverStopAction = devAppserverStopTask
+  def devAppserverStartTask(args: Seq[String]) = task {devAppserverInstance(args)}
+  def devAppserverStopTask = task{
+    devAppserverInstance.stop()
+    None
+  }
+
+  class DevAppserverRun() extends Runnable with ExitHook {
+    ExitHooks.register(this)
+    def name = "dev_appserver-shitdown"
+    def runBeforeExiting() { stop() }
+
+    val jvmOptions =
+      List("-ea", "-javaagent:"+appengineAgentPath.absolutePath,
+           "-cp", appengineToolsJarPath.absolutePath)
+
+    private var running: Option[Process] = None
+
+    def run() {
+      running.foreach(_.exitValue())
+      running = None
+    }
+
+    def apply(args: Seq[String]): Option[String] = {
+      if (running.isDefined)
+        Some("This instance of dev_appserver is already running.")
+      else {
+        val builder: ProcessBuilder =
+          Process(javaCmd :: jvmOptions :::
+                  "com.google.appengine.tools.development.DevAppServerMain" ::
+                  args.toList ::: temporaryWarPath.relativePath :: Nil)
+        running = Some(builder.run)
+        new Thread(this).start()
+        None
+      }
+    }
+
+    def stop() {
+      running.foreach(_.destroy)
+      running = None
+      log.debug("stop")
+    }
+  }
 
 }
 
