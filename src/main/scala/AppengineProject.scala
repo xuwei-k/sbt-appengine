@@ -60,6 +60,7 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
 
   def appengineAgentPath = appengineLibPath / "agent" / "appengine-agent.jar"
 
+  def devAppserverJvmOptions:Seq[String] = List()
   lazy val devAppserverInstance = new DevAppserverRun
   lazy val devAppserverStart = devAppserverStartAction
   lazy val devAppserverStop = devAppserverStopAction
@@ -78,7 +79,7 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
 
     val jvmOptions =
       List("-ea", "-javaagent:"+appengineAgentPath.absolutePath,
-           "-cp", appengineToolsJarPath.absolutePath)
+           "-cp", appengineToolsJarPath.absolutePath) ++ devAppserverJvmOptions
 
     private var running: Option[Process] = None
 
@@ -130,4 +131,24 @@ trait DataNucleus extends AppengineProject {
            "-api", usePersistentApi,
            (if(checkonly) "-checkonly" else "")) ++
       mainClasses.get.map(_.projectRelativePath))
+}
+
+trait JRebel extends AppengineProject {
+  override def devAppserverJvmOptions =
+    if (jrebelPath.isDefined)
+      List("-javaagent:" + jrebelPath.get.absolutePath,
+           "-noverify") ++ jrebelJvmOptions ++ super.devAppserverJvmOptions
+    else
+      super.devAppserverJvmOptions
+
+  def jrebelJvmOptions:Seq[String] = List()
+  def jrebelPath = {
+    val jrebel = System.getenv("JREBEL_JAR_PATH")
+    if (jrebel == null) {
+      log.error("You need to set JREBEL_JAR_PATH")
+      None
+    } else
+      Some(Path.fromFile(new File(jrebel)))
+  }
+
 }
