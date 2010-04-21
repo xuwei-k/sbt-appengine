@@ -8,6 +8,9 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
 
   override def unmanagedClasspath = super.unmanagedClasspath +++ appengineClasspath
 
+  override def webappUnmanaged =
+    (temporaryWarPath / "WEB-INF" / "appengine-generated" ***)
+
   def appengineClasspath: PathFinder = appengineApiJarPath
 
   def appengineApiJarName = "appengine-api-1.0-sdk-" + sdkVersion + ".jar"
