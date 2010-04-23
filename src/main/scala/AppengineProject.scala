@@ -7,11 +7,13 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
   val servlet = "javax.servlet" % "servlet-api" % "2.5" % "provided"
 
   override def unmanagedClasspath = super.unmanagedClasspath +++ appengineClasspath
+  override def testUnmanagedClasspath = super.testUnmanagedClasspath +++ appengineTestClasspath
 
   override def webappUnmanaged =
     (temporaryWarPath / "WEB-INF" / "appengine-generated" ***)
 
   def appengineClasspath: PathFinder = appengineApiJarPath
+  def appengineTestClasspath: PathFinder = (appengineLibImplPath * "*.jar") +++ (appengineLibPath / "testing" * "*.jar")
 
   def appengineApiJarName = "appengine-api-1.0-sdk-" + sdkVersion + ".jar"
   def appengineApiLabsJarName = "appengine-api-labs-" + sdkVersion + ".jar"
@@ -20,6 +22,7 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
 
   def appengineLibPath = appengineSdkPath / "lib"
   def appengineLibUserPath = appengineLibPath / "user"
+  def appengineLibImplPath = appengineLibPath / "impl"
   def appengineApiJarPath = appengineLibUserPath / appengineApiJarName
   def appengineApiLabsJarPath = appengineLibUserPath / appengineApiLabsJarName
   def jsr107cacheJarsPath = appengineLibUserPath / appengineJSR107CacheJarName +++ appengineLibUserPath / jsr107CacheJarName
