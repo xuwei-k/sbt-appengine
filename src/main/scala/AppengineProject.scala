@@ -40,7 +40,7 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
   def osBatchSuffix = if (isWindows) ".cmd" else ".sh"
 
   def sdkVersion = {
-    val pat = """appengine-api-1.0-sdk-(\d\.\d\.\d)\.jar""".r
+    val pat = """appengine-api-1.0-sdk-(\d\.\d\.\d(?:\.\d)*)\.jar""".r
     (appengineLibUserPath * "appengine-api-1.0-sdk-*.jar").get.toList match {
       case jar::_ => jar.name match {
         case pat(version) => version
