@@ -53,10 +53,40 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
     Path.fromFile(new File(sdk))
   }
 
-  def appcfgTask(action: String) = execTask {
-    <x>
-      {appcfgPath.absolutePath} {action}
+  lazy val requsetLogs = requestLogsAction
+  lazy val rollbackWebapp = rollbackWebappAction
+  lazy val updateWebapp = updateWebappAction
+  lazy val updateIndexes = updateIndexesAction
+  lazy val updateCron = updateCronAction
+  lazy val updateQueues = updateQueuesAction
+  lazy val updateDos = updateDosAction
+  lazy val cronInfo = cronInfoAction
+
+  def requestLogsAction = task{ opts => appcfgTask("request_logs", Some("request.log"), opts) } describedAs("Write request logs in Apache common log format.")
+  def rollbackWebappAction = task{ opts => appcfgTask("rollback", None, opts) } describedAs("Rollback an in-progress update.")
+  def updateWebappAction = task{ opts => appcfgTask("update", None, opts) dependsOn(prepareWebapp) } describedAs("Create or update an app version.")
+  def updateIndexesAction = task{ opts => appcfgTask("update_indexes", None, opts) dependsOn(prepareWebapp) } describedAs("Update application indexes.")
+  def updateCronAction = task{ opts => appcfgTask("update_cron", None, opts) dependsOn(prepareWebapp) } describedAs("Update application cron jobs.")
+  def updateQueuesAction = task{ opts => appcfgTask("update_queues", None, opts) dependsOn(prepareWebapp) } describedAs("Update application task queue definitions.")
+  def updateDosAction = task{ opts => appcfgTask("update_dos", None, opts) dependsOn(prepareWebapp) } describedAs("Update application DoS protection configuration.")
+  def cronInfoAction = task{ opts => appcfgTask("cron_info", None, opts) } describedAs("Displays times for the next several runs of each cron job.")
+
+  def appcfgTask(action: String, outputFile: Option[String], options: Seq[String]) = interactiveTask {
+    val terminal = Some(jline.Terminal.getTerminal).filter(_.isInstanceOf[jline.UnixTerminal]).map(_.asInstanceOf[jline.UnixTerminal])
+    val command: ProcessBuilder = <x>
+      {appcfgPath.absolutePath} {options.mkString(" ")} {action} {temporaryWarPath.relativePath} {outputFile.mkString}
     </x>
+    log.debug("Executing command " + command)
+    terminal.foreach(_.restoreTerminal)
+    try {
+      val exitValue = command.run(true).exitValue() // don't buffer output
+      if(exitValue == 0)
+        None
+      else
+        Some("Nonzero exit value: " + exitValue)
+    } finally {
+      terminal.foreach(_.initializeTerminal)
+    }
   }
 
   lazy val javaCmd = (Path.fromFile(new java.io.File(System.getProperty("java.home"))) / "bin" / "java").absolutePath
