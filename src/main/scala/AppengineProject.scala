@@ -31,10 +31,7 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
 
 
   def appcfgName = "appcfg" + osBatchSuffix
-  def devAppserverName = "dev_appserver" + osBatchSuffix
-
   def appcfgPath = appengineSdkPath / "bin" / appcfgName
-  def devAppserverPath = appengineSdkPath / "bin" / devAppserverName
 
   def isWindows = System.getProperty("os.name").startsWith("Windows")
   def osBatchSuffix = if (isWindows) ".cmd" else ".sh"
