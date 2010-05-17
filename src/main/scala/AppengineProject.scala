@@ -163,7 +163,7 @@ trait DataNucleus extends AppengineProject {
       List("-v",
            "-api", usePersistentApi,
            (if(checkonly) "-checkonly" else "")) ++
-      mainClasses.get.map(_.projectRelativePath))
+      mainClasses.get.map(_.absolutePath))
 }
 
 trait JRebel extends AppengineProject {
