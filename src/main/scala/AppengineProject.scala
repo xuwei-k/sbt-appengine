@@ -74,7 +74,7 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
   def appcfgTask(action: String, outputFile: Option[String], options: Seq[String]) = interactiveTask {
     val terminal = Some(jline.Terminal.getTerminal).filter(_.isInstanceOf[jline.UnixTerminal]).map(_.asInstanceOf[jline.UnixTerminal])
     val command: ProcessBuilder = <x>
-      {appcfgPath.absolutePath} {options.mkString(" ")} {action} {temporaryWarPath.relativePath} {outputFile.mkString}
+      {appcfgPath.absolutePath} {options.mkString(" ")} {action} {temporaryWarPath.absolutePath} {outputFile.mkString}
     </x>
     log.debug("Executing command " + command)
     terminal.foreach(_.restoreTerminal)
@@ -128,7 +128,7 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
         val builder: ProcessBuilder =
           Process(javaCmd :: jvmOptions :::
                   "com.google.appengine.tools.development.DevAppServerMain" ::
-                  args.toList ::: temporaryWarPath.relativePath :: Nil)
+                  args.toList ::: temporaryWarPath.absolutePath :: Nil)
         running = Some(builder.run)
         new Thread(this).start()
         None
