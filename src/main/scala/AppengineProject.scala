@@ -3,6 +3,9 @@ package sbt
 import java.io.File
 import sbt.Process._
 
+case class AppenginePathFinder(pathFinder: PathFinder)
+case class AppengineTestPathFinder(pathFinder: PathFinder)
+
 abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(info) {
   val servlet = "javax.servlet" % "servlet-api" % "2.5" % "provided"
 
@@ -12,8 +15,8 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
   override def webappUnmanaged =
     (temporaryWarPath / "WEB-INF" / "appengine-generated" ***)
 
-  def appengineClasspath: PathFinder = appengineApiJarPath
-  def appengineTestClasspath: PathFinder = (appengineLibImplPath * "*.jar") +++ (appengineLibPath / "testing" * "*.jar")
+  def appengineClasspath: PathFinder = appengineApiJarPath +++ Reflective.reflectiveMappings[AppenginePathFinder](this).values.foldLeft(Path.emptyPathFinder)(_ +++ _.pathFinder)
+  def appengineTestClasspath: PathFinder = (appengineLibImplPath * "*.jar") +++ (appengineLibPath / "testing" * "*.jar") +++ Reflective.reflectiveMappings[AppengineTestPathFinder](this).values.foldLeft(Path.emptyPathFinder)(_ +++ _.pathFinder)
 
   def appengineApiJarName = "appengine-api-1.0-sdk-" + sdkVersion + ".jar"
   def appengineApiLabsJarName = "appengine-api-labs-" + sdkVersion + ".jar"
@@ -24,8 +27,8 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
   def appengineLibUserPath = appengineLibPath / "user"
   def appengineLibImplPath = appengineLibPath / "impl"
   def appengineApiJarPath = appengineLibUserPath / appengineApiJarName
-  def appengineApiLabsJarPath = appengineLibUserPath / appengineApiLabsJarName
-  def jsr107cacheJarsPath = appengineLibUserPath / appengineJSR107CacheJarName +++ appengineLibUserPath / jsr107CacheJarName
+  object AppengineApiLabsJar extends AppenginePathFinder(appengineLibUserPath / appengineApiLabsJarName)
+  object Jsr107cacheJars extends AppenginePathFinder(appengineLibUserPath / appengineJSR107CacheJarName +++ appengineLibUserPath / jsr107CacheJarName)
 
   def appengineToolsJarPath = (appengineLibPath / "appengine-tools-api.jar")
 
@@ -145,11 +148,9 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
 }
 
 trait DataNucleus extends AppengineProject {
-  override def appengineClasspath = super.appengineClasspath +++ appengineApiLabsJarPath +++ appengineORMJarsPath
-
   override def prepareWebappAction = super.prepareWebappAction dependsOn(enhance)
 
-  def appengineORMJarsPath = appengineLibUserPath / "orm" * "*.jar"
+  val appengineORMJarsPath = AppenginePathFinder(appengineLibUserPath / "orm" * "*.jar")
   def appengineORMEnhancerClasspath = (appengineLibPath / "tools" / "orm" * "datanucleus-enhancer-*.jar")  +++ (appengineLibPath / "tools" / "orm" * "asm-*.jar")
 
   lazy val enhance = enhanceAction
