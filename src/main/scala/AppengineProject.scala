@@ -56,7 +56,7 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
     Path.fromFile(new File(sdk))
   }
 
-  lazy val requsetLogs = requestLogsAction
+  lazy val requestLogs = requestLogsAction
   lazy val rollbackWebapp = rollbackWebappAction
   lazy val updateWebapp = updateWebappAction
   lazy val updateIndexes = updateIndexesAction
@@ -103,14 +103,14 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
   def devAppserverStartAction = task{ args => devAppserverStartTask(args) dependsOn(prepareWebapp) }
   def devAppserverStopAction = devAppserverStopTask
   def devAppserverStartTask(args: Seq[String]) = task {devAppserverInstance(args)}
-  def devAppserverStopTask = task{
+  def devAppserverStopTask = task {
     devAppserverInstance.stop()
     None
   }
 
   class DevAppserverRun() extends Runnable with ExitHook {
     ExitHooks.register(this)
-    def name = "dev_appserver-shitdown"
+    def name = "dev_appserver-shutdown"
     def runBeforeExiting() { stop() }
 
     val jvmOptions =
