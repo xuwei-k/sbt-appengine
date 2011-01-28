@@ -108,7 +108,7 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
     None
   }
 
-  class DevAppserverRun() extends Runnable with ExitHook {
+  class DevAppserverRun extends Runnable with ExitHook {
     ExitHooks.register(this)
     def name = "dev_appserver-shutdown"
     def runBeforeExiting() { stop() }
@@ -126,13 +126,14 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
 
     def apply(args: Seq[String]): Option[String] = {
       if (running.isDefined)
-        Some("This instance of dev_appserver is already running.")
+        Some("An instance of dev_appserver is already running.")
       else {
         val builder: ProcessBuilder =
           Process(javaCmd :: jvmOptions :::
                   "com.google.appengine.tools.development.DevAppServerMain" ::
-                  args.toList ::: temporaryWarPath.absolutePath :: Nil)
-        running = Some(builder.run)
+                  args.toList ::: temporaryWarPath.absolutePath :: Nil,
+                  Some(temporaryWarPath.asFile))
+        running = Some(builder.run())
         new Thread(this).start()
         None
       }
