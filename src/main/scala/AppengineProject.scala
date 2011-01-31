@@ -7,8 +7,6 @@ case class AppenginePathFinder(pathFinder: PathFinder)
 case class AppengineTestPathFinder(pathFinder: PathFinder)
 
 abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(info) {
-  val servlet = "javax.servlet" % "servlet-api" % "2.5" % "provided"
-
   override def unmanagedClasspath = super.unmanagedClasspath +++ appengineClasspath
   override def testUnmanagedClasspath = super.testUnmanagedClasspath +++ appengineTestClasspath
 
