@@ -14,7 +14,7 @@ Usage
 
 export environment variables
 
-    export APPENGINE_SDK_HOME=~/appengine-java-sdk-1.3.3
+    export APPENGINE_SDK_HOME=~/appengine-java-sdk-1.4.0
     export JREBEL_JAR_PATH=~/jrebel/jrebel.jar
 
 Create project/plugins/Plugins.scala
@@ -22,7 +22,7 @@ Create project/plugins/Plugins.scala
 <pre><code>import sbt._
 
 class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
-  val appenginePlugin = "net.stbbs.yasushi" % "sbt-appengine-plugin" % "2.1-SNAPSHOT"
+  val appenginePlugin = "net.stbbs.yasushi" % "sbt-appengine-plugin" % "2.2"
 }
 </code></pre>
 
