@@ -30,6 +30,10 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
 
   def appengineToolsJarPath = (appengineLibPath / "appengine-tools-api.jar")
 
+  /* Overrides jar present as of sdk 1.4.3 */
+  def appengineOverridePath = appengineSdkPath / "lib" / "override"
+  def overridesJarName = "appengine-dev-jdk-overrides.jar"
+  def appengineOverridesJarPath = appengineOverridePath / overridesJarName
 
   def appcfgName = "appcfg" + osBatchSuffix
   def appcfgPath = appengineSdkPath / "bin" / appcfgName
@@ -113,7 +117,8 @@ abstract class AppengineProject(info: ProjectInfo) extends DefaultWebProject(inf
 
     val jvmOptions =
       List("-ea", "-javaagent:"+appengineAgentPath.absolutePath,
-           "-cp", appengineToolsJarPath.absolutePath) ++ devAppserverJvmOptions
+           "-cp", appengineToolsJarPath.absolutePath,
+           "-Xbootclasspath/p:"+appengineOverridesJarPath) ++ devAppserverJvmOptions
 
     private var running: Option[Process] = None
 
