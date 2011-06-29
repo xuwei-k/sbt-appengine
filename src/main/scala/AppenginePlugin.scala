@@ -6,7 +6,8 @@ import sbt.Process._
 object AppenginePlugin {
   import Keys._
   import Project.Initialize
-  import com.github.siasia.WebPlugin._
+  import com.github.siasia.WebPlugin
+  import WebPlugin._
 
   val Appengine = config("appengine")
 
@@ -76,12 +77,12 @@ object AppenginePlugin {
   def isWindows = System.getProperty("os.name").startsWith("Windows")
   def osBatchSuffix = if (isWindows) ".cmd" else ".sh"
 
-  lazy val settings = webSettings ++ inConfig(Appengine)(Seq(
+  val webSettings: Seq[Project.Setting[_]] = WebPlugin.webSettings ++ inConfig(Appengine)(Seq(
     prepareWebapp    <<= (prepareWebapp in Compile).identity,
     temporaryWarPath <<= (temporaryWarPath in Compile).identity,
     webappResources  <<= (webappResources in Compile).identity,
     webappUnmanaged  <<= (temporaryWarPath) { (dir) => dir / "WEB-INF" / "appengine-generated" *** },
-    unmanagedClasspath  <++= (appengineClasspath) map { (cp) => cp },
+    unmanagedClasspath  <<= (unmanagedClasspath in Compile, appengineClasspath) map { (orig, cp) => orig ++ cp },
 
     requestLogs <<= inputTask { (args: TaskKey[Seq[String]])   => appcfgTask("request_logs", Some("request.log"), args) },
     rollback <<= inputTask { (args: TaskKey[Seq[String]])      => appcfgTask("rollback", None, args) },
@@ -117,7 +118,10 @@ object AppenginePlugin {
       val testingjars = (lib / "testing" * "*.jar").get
       cp ++ Attributed.blankSeq(impljars ++ testingjars)
     }
-  ))
+  )) ++
+  Seq(
+    unmanagedClasspath in Compile  <++= (appengineClasspath in Appengine) map { (cp) => cp }
+  )
 
   /*
   def appengineToolsJarPath = (appengineLibPath / "appengine-tools-api.jar")
