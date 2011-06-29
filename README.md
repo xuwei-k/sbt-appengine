@@ -1,32 +1,32 @@
-Require
-=======
+sbt-appengine is a sbt 0.10 port of an awesome sbt plugin by yashushi:
+> appengine plugin for simple-build-tool 0.7.x.
 
- * [sbt][] 0.7.3
- * [Google App Engine SDK][GAE]
- * [JRebel][] optional
-
-[sbt]: http://simple-build-tool.googlecode.com/
-[GAE]: http://code.google.com/intl/en/appengine/downloads.html
-[JRebel]: http://www.zeroturnaround.com/jrebel/
-
-Usage
+usage
 =====
+export environment variables (actually, JRebel support is not ported yet).
 
-export environment variables
-
-    export APPENGINE_SDK_HOME=~/appengine-java-sdk-1.4.0
+    export APPENGINE_SDK_HOME=~/appengine-java-sdk-1.5.0
     export JREBEL_JAR_PATH=~/jrebel/jrebel.jar
 
-Create project/plugins/Plugins.scala
+put the following in the `project/plugins/build.sbt`:
 
-<pre><code>import sbt._
+    libraryDependencies += "com.eed3si9n" %% "sbt-appengine" % "0.1-SNAPSHOT"
 
-class Plugins(info: ProjectInfo) extends PluginDefinition(info) {
-  val appenginePlugin = "net.stbbs.yasushi" % "sbt-appengine-plugin" % "2.2"
-}
-</code></pre>
+or, specify sbt-assembly.git as a dependency in `project/plugins/project/build.scala`:
 
-----
-[Hello World example][HelloWorld]
+    import sbt._
 
-[HelloWorld]: http://gist.github.com/377611
+    object Plugins extends Build {
+      lazy val root = Project("root", file(".")) dependsOn(
+        uri("git://github.com/eed3si9n/sbt-appengine.git")
+      )
+    }
+
+then, define the project as follows:
+
+    lazy val example = Project("web", file("web"),
+      settings = Defaults.defaultSettings ++ sbtappengine.AppenginePlugin.webSettings)
+
+you can now deploy your application like this:
+
+    > appengine:deploy
