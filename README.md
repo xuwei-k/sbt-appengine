@@ -1,5 +1,4 @@
-sbt-appengine is a sbt 0.10 port of an awesome sbt plugin by yashushi:
-> appengine plugin for simple-build-tool 0.7.x.
+sbt-appengine is a sbt 0.10 port of the awesome [sbt-appengine-plugin][1] by [yasushi][2].
 
 usage
 =====
@@ -30,3 +29,6 @@ then, define the project as follows:
 you can now deploy your application like this:
 
     > appengine:deploy
+
+  [1]: https://github.com/Yasushi/sbt-appengine-plugin
+  [2]: https://github.com/Yasushi
