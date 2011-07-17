@@ -9,7 +9,7 @@ export environment variables (actually, JRebel support is not ported yet).
 
 put the following in the `project/plugins/build.sbt`:
 
-    libraryDependencies += "com.eed3si9n" %% "sbt-appengine" % "0.1"
+    libraryDependencies <+= (sbtVersion) { sv => "com.eed3si9n" %% "sbt-appengine" % ("sbt" + sv + "_0.2") }
 
 or, specify sbt-assembly.git as a dependency in `project/plugins/project/build.scala`:
 
