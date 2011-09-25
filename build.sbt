@@ -8,9 +8,9 @@ organization := "com.eed3si9n"
 
 // version <<= (sbtVersion, version in Posterous) { (sv, nv) => "sbt" + sv + "_" + nv }
 
-version := "0.2"
+version := "0.2-SNAPSHOT"
 
-libraryDependencies <+= (sbtVersion) { (sv) => "com.github.siasia" %% "xsbt-web-plugin" % ("0.1.0-" + sv) }
+addSbtPlugin("com.github.siasia" %% "xsbt-web-plugin" % "0.1.2")
 
 scalacOptions := Seq("-deprecation", "-unchecked")
 
