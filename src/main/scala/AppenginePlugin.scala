@@ -3,42 +3,43 @@ package sbtappengine
 import sbt._
 import sbt.Process._
 
-object AppenginePlugin {
+object Plugin extends sbt.Plugin {
   import Keys._
   import Project.Initialize
   import com.github.siasia.WebPlugin
   import WebPlugin._
-
-  val Appengine = config("appengine")
-
-  val requestLogs   = InputKey[Unit]("request-logs", "Write request logs in Apache common log format.")
-  val rollback      = InputKey[Unit]("rollback", "Rollback an in-progress update.")
-  val deploy        = InputKey[Unit]("deploy", "Create or update an app version.")
-  val deployIndexes = InputKey[Unit]("deploy-indexes", "Update application indexes.")
-  val deployCron    = InputKey[Unit]("deploy-cron", "Update application cron jobs.")
-  val deployQueues  = InputKey[Unit]("deploy-queues", "Update application task queue definitions.")
-  val deployDos     = InputKey[Unit]("deploy-dos", "Update application DoS protection configuration.")
-  val cronInfo      = InputKey[Unit]("cron-info", "Displays times for the next several runs of each cron job.")
-
-  val sdkVersion    = SettingKey[String]("sdk-version")
-  val appengineSdkPath = SettingKey[File]("appengine-sdk-path")
-  val appengineClasspath = SettingKey[Classpath]("appengine-classpath")
-  val appengineApiJarName = SettingKey[String]("appengine-api-jar-name")
-  val appengineApiLabsJarName = SettingKey[String]("appengine-api-labs-jar-name")
-  val appengineJSR107CacheJarName = SettingKey[String]("appengine-jsr107-cache-jar-name")
-  val jsr107CacheJarName = SettingKey[String]("jsr107-cache-jar-name")
-  val appengineBinPath = SettingKey[File]("appengine-bin-path")
-  val appengineLibPath = SettingKey[File]("appengine-lib-path")
-  val appengineLibUserPath = SettingKey[File]("appengine-lib-user-path")
-  val appengineLibImplPath = SettingKey[File]("appengine-lib-impl-path")
-  val appengineApiJarPath = SettingKey[File]("appengine-api-jar-path")
-  val appcfgName    = SettingKey[String]("appcfg-name")
-  val appcfgPath    = SettingKey[File]("appcfg-path")
-  val emptyMap      = TaskKey[Seq[(File, String)]]("empty-map")
-
+  
+  object AppengineKeys {
+    lazy val requestLogs    = InputKey[Unit]("appengine-request-logs", "Write request logs in Apache common log format.")
+    lazy val rollback       = InputKey[Unit]("appengine-rollback", "Rollback an in-progress update.")
+    lazy val deploy         = InputKey[Unit]("appengine-deploy", "Create or update an app version.")
+    lazy val deployIndexes  = InputKey[Unit]("appengine-deploy-indexes", "Update application indexes.")
+    lazy val deployCron     = InputKey[Unit]("appengine-deploy-cron", "Update application cron jobs.")
+    lazy val deployQueues   = InputKey[Unit]("appengine-deploy-queues", "Update application task queue definitions.")
+    lazy val deployDos      = InputKey[Unit]("appengine-deploy-dos", "Update application DoS protection configuration.")
+    lazy val cronInfo       = InputKey[Unit]("appengine-cron-info", "Displays times for the next several runs of each cron job.")
+    
+    lazy val sdkVersion     = SettingKey[String]("appengine-sdk-version")
+    lazy val sdkPath        = SettingKey[File]("appengine-sdk-path")
+    lazy val classpath      = SettingKey[Classpath]("appengine-classpath")
+    lazy val apiJarName     = SettingKey[String]("appengine-api-jar-name")
+    lazy val apiLabsJarName = SettingKey[String]("appengine-api-labs-jar-name")
+    lazy val jsr107CacheJarName = SettingKey[String]("appengine-jsr107-cache-jar-name")
+    lazy val binPath        = SettingKey[File]("appengine-bin-path")
+    lazy val libPath        = SettingKey[File]("appengine-lib-path")
+    lazy val libUserPath    = SettingKey[File]("appengine-lib-user-path")
+    lazy val libImplPath    = SettingKey[File]("appengine-lib-impl-path")
+    lazy val apiJarPath     = SettingKey[File]("appengine-api-jar-path")
+    lazy val appcfgName     = SettingKey[String]("appengine-appcfg-name")
+    lazy val appcfgPath     = SettingKey[File]("appengine-appcfg-path")
+    lazy val emptyMap       = TaskKey[Seq[(File, String)]]("appengine-empty-map")    
+  }
+  private val gae = AppengineKeys
+  
   private def appcfgTask(action: String, outputFile: Option[String],
-                         args: TaskKey[Seq[String]], depends: TaskKey[Seq[(File, String)]] = emptyMap) =
-    (args, temporaryWarPath, appcfgPath, streams, depends) map { (args, w, appcfgPath, s, m) =>
+                         args: TaskKey[Seq[String]],
+                         depends: TaskKey[Seq[(File, String)]] = gae.emptyMap) =
+    (args, temporaryWarPath, gae.appcfgPath, streams, depends) map { (args, w, appcfgPath, s, m) =>
       val terminal = (Some(jline.Terminal.getTerminal)
         filter {_.isInstanceOf[jline.UnixTerminal]}
         map {_.asInstanceOf[jline.UnixTerminal] })
@@ -59,7 +60,7 @@ object AppenginePlugin {
 
   private def buildAppengineSdkPath: File = {
     val sdk = System.getenv("APPENGINE_SDK_HOME")
-    if (sdk == null) error("You need to set APPENGINE_SDK_HOME")
+    if (sdk == null) sys.error("You need to set APPENGINE_SDK_HOME")
     new File(sdk)
   }
 
@@ -68,60 +69,57 @@ object AppenginePlugin {
     (libUserPath * "appengine-api-1.0-sdk-*.jar").get.toList match {
       case jar::_ => jar.name match {
         case pat(version) => version
-        case _ => error("invalid jar file. " + jar)
+        case _ => sys.error("invalid jar file. " + jar)
       }
-      case _ => error("not found appengine api jar.")
+      case _ => sys.error("not found appengine api jar.")
     }
   }
 
-  def isWindows = System.getProperty("os.name").startsWith("Windows")
-  def osBatchSuffix = if (isWindows) ".cmd" else ".sh"
+  private def isWindows = System.getProperty("os.name").startsWith("Windows")
+  private def osBatchSuffix = if (isWindows) ".cmd" else ".sh"
 
-  val webSettings: Seq[Project.Setting[_]] = WebPlugin.webSettings ++ inConfig(Appengine)(Seq(
-    prepareWebapp    <<= (prepareWebapp in Compile).identity,
-    temporaryWarPath <<= (temporaryWarPath in Compile).identity,
-    webappResources  <<= (webappResources in Compile).identity,
+  lazy val baseAppengineSettings: Seq[Project.Setting[_]] = Seq(
     webappUnmanaged  <<= (temporaryWarPath) { (dir) => dir / "WEB-INF" / "appengine-generated" *** },
-    unmanagedClasspath  <<= (unmanagedClasspath in Compile, appengineClasspath) map { (orig, cp) => orig ++ cp },
+    unmanagedClasspath  <<= (unmanagedClasspath, gae.classpath) map { (orig, cp) => orig ++ cp },
 
-    requestLogs <<= inputTask { (args: TaskKey[Seq[String]])   => appcfgTask("request_logs", Some("request.log"), args) },
-    rollback <<= inputTask { (args: TaskKey[Seq[String]])      => appcfgTask("rollback", None, args) },
-    deploy <<= inputTask { (args: TaskKey[Seq[String]])        => appcfgTask("update", None, args, prepareWebapp) },
-    deployIndexes <<= inputTask { (args: TaskKey[Seq[String]]) => appcfgTask("update_indexes", None, args, prepareWebapp) },
-    deployCron <<= inputTask { (args: TaskKey[Seq[String]])    => appcfgTask("update_cron", None, args, prepareWebapp) },
-    deployQueues <<= inputTask { (args: TaskKey[Seq[String]])  => appcfgTask("update_queues", None, args, prepareWebapp) },
-    deployDos <<= inputTask { (args: TaskKey[Seq[String]])     => appcfgTask("update_dos", None, args, prepareWebapp) },
-    cronInfo <<= inputTask { (args: TaskKey[Seq[String]])      => appcfgTask("cron_info", None, args) },
+    gae.requestLogs <<= inputTask { (args: TaskKey[Seq[String]])   => appcfgTask("request_logs", Some("request.log"), args) },
+    gae.rollback <<= inputTask { (args: TaskKey[Seq[String]])      => appcfgTask("rollback", None, args) },
+    gae.deploy <<= inputTask { (args: TaskKey[Seq[String]])        => appcfgTask("update", None, args, prepareWebapp) },
+    gae.deployIndexes <<= inputTask { (args: TaskKey[Seq[String]]) => appcfgTask("update_indexes", None, args, prepareWebapp) },
+    gae.deployCron <<= inputTask { (args: TaskKey[Seq[String]])    => appcfgTask("update_cron", None, args, prepareWebapp) },
+    gae.deployQueues <<= inputTask { (args: TaskKey[Seq[String]])  => appcfgTask("update_queues", None, args, prepareWebapp) },
+    gae.deployDos <<= inputTask { (args: TaskKey[Seq[String]])     => appcfgTask("update_dos", None, args, prepareWebapp) },
+    gae.cronInfo <<= inputTask { (args: TaskKey[Seq[String]])      => appcfgTask("cron_info", None, args) },
 
-    sdkVersion <<= (appengineLibUserPath) { (dir) => buildSdkVersion(dir) },
-    appengineSdkPath := buildAppengineSdkPath,
-    appengineClasspath <<= (appengineApiJarPath) { (jar: File) => Attributed.blankSeq(Seq(jar)) },
-    appengineApiJarName <<= (sdkVersion) { (v) => "appengine-api-1.0-sdk-" + v + ".jar" },
-    appengineApiLabsJarName <<= (sdkVersion) { (v) => "appengine-api-labs-" + v + ".jar" },
-    appengineJSR107CacheJarName <<= (sdkVersion) { (v) => "appengine-jsr107cache-" + v + ".jar" },
-    jsr107CacheJarName := "jsr107cache-1.1.jar",
-
-    appengineBinPath <<= (appengineSdkPath) { (dir) => dir / "bin" },
-    appengineLibPath <<= (appengineSdkPath) { (dir) => dir / "lib" },
-    appengineLibUserPath <<= (appengineLibPath) { (dir) => dir / "user" },
-    appengineLibImplPath <<= (appengineLibPath) { (dir) => dir / "impl" },
-    appengineApiJarPath <<= (appengineLibUserPath, appengineApiJarName) { (dir, name) => dir / name },
-    appcfgName := "appcfg" + osBatchSuffix,
-    appcfgPath <<= (appengineBinPath, appcfgName) { (dir, name) => dir / name },
-    emptyMap := Nil
-  )) ++
-  inConfig(Test)(Seq(
-    unmanagedClasspath <++= (appengineClasspath) map { (cp) => cp },
-    appengineClasspath <<= (appengineClasspath in Appengine,
-      appengineLibImplPath in Appengine, appengineLibPath in Appengine) { (cp, impl, lib) =>
-      val impljars = (impl * "*.jar").get
-      val testingjars = (lib / "testing" * "*.jar").get
-      cp ++ Attributed.blankSeq(impljars ++ testingjars)
-    }
-  )) ++
-  Seq(
-    unmanagedClasspath in Compile  <++= (appengineClasspath in Appengine) map { (cp) => cp }
+    gae.sdkVersion <<= (gae.libUserPath) { (dir) => buildSdkVersion(dir) },
+    gae.sdkPath := buildAppengineSdkPath,
+    gae.classpath <<= (gae.apiJarPath) { (jar: File) => Attributed.blankSeq(Seq(jar)) },
+    gae.apiJarName <<= (gae.sdkVersion) { (v) => "appengine-api-1.0-sdk-" + v + ".jar" },
+    gae.apiLabsJarName <<= (gae.sdkVersion) { (v) => "appengine-api-labs-" + v + ".jar" },
+    gae.jsr107CacheJarName <<= (gae.sdkVersion) { (v) => "appengine-jsr107cache-" + v + ".jar" },
+    
+    gae.binPath <<= gae.sdkPath(_ / "bin"),
+    gae.libPath <<= gae.sdkPath(_ / "lib"),
+    gae.libUserPath <<= gae.libPath(_ / "user"),
+    gae.libImplPath <<= gae.libPath(_ / "impl"),
+    gae.apiJarPath <<= (gae.libUserPath, gae.apiJarName) { (dir, name) => dir / name },
+    gae.appcfgName := "appcfg" + osBatchSuffix,
+    gae.appcfgPath <<= (gae.binPath, gae.appcfgName) { (dir, name) => dir / name },
+    gae.emptyMap := Nil  
   )
+
+  lazy val webSettings = appengineSettings
+  lazy val appengineSettings: Seq[Project.Setting[_]] = WebPlugin.webSettings ++
+    inConfig(Compile)(baseAppengineSettings) ++
+    inConfig(Test)(Seq(
+      unmanagedClasspath <++= (gae.classpath) map { (cp) => cp },
+      gae.classpath <<= (gae.classpath in Compile,
+        gae.libImplPath in Compile, gae.libPath in Compile) { (cp, impl, lib) =>
+        val impljars = (impl * "*.jar").get
+        val testingjars = (lib / "testing" * "*.jar").get
+        cp ++ Attributed.blankSeq(impljars ++ testingjars)
+      }
+    ))
 
   /*
   def appengineToolsJarPath = (appengineLibPath / "appengine-tools-api.jar")

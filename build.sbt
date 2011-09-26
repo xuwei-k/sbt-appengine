@@ -8,7 +8,7 @@ organization := "com.eed3si9n"
 
 // version <<= (sbtVersion, version in Posterous) { (sv, nv) => "sbt" + sv + "_" + nv }
 
-version := "0.2-SNAPSHOT"
+version := "0.3-SNAPSHOT"
 
 addSbtPlugin("com.github.siasia" %% "xsbt-web-plugin" % "0.1.2")
 

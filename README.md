@@ -1,4 +1,4 @@
-sbt-appengine is a sbt 0.10 port of the awesome [sbt-appengine-plugin][1] by [yasushi][2].
+sbt-appengine is a sbt 0.10+ port of the awesome [sbt-appengine-plugin][1] by [yasushi][2].
 
 usage
 =====
@@ -9,26 +9,22 @@ export environment variables (actually, JRebel support is not ported yet).
 
 put the following in the `project/plugins/build.sbt`:
 
-    libraryDependencies <+= (sbtVersion) { sv => "com.eed3si9n" %% "sbt-appengine" % ("sbt" + sv + "_0.2") }
+    resolvers += "Web plugin repo" at "http://siasia.github.com/maven2"
+    
+    addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.3")
 
-or, specify sbt-assembly.git as a dependency in `project/plugins/project/build.scala`:
+for `build.sbt`:
 
-    import sbt._
+    seq(appengineSettings: _*)
 
-    object Plugins extends Build {
-      lazy val root = Project("root", file(".")) dependsOn(
-        uri("git://github.com/eed3si9n/sbt-appengine.git")
-      )
-    }
-
-then, define the project as follows:
+for `build.scala`:
 
     lazy val example = Project("web", file("web"),
-      settings = Defaults.defaultSettings ++ sbtappengine.AppenginePlugin.webSettings)
+      settings = Defaults.defaultSettings ++ sbtappengine.AppenginePlugin.appengineSettings)
 
 you can now deploy your application like this:
 
-    > appengine:deploy
+    > appengine-deploy
 
   [1]: https://github.com/Yasushi/sbt-appengine-plugin
   [2]: https://github.com/Yasushi

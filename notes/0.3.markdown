@@ -1,0 +1,15 @@
+## breaking changes
+In an effort to solve namespace conflicts and to increase consistency among the plugins, a number of sbt plugin authors have discussed on the mailing list, and come up with [sbt plugins best practices](https://github.com/harrah/xsbt/wiki/Plugins-Best-Practices). Here are the changes:
+
+### keys are under `AppengineKeys` object
+Keys provided by sbt-appengine now resides in `AppengineKeys` object. If you do rewire any of the keys in `build.sbt`, place the following at the top of file:
+
+    import sbtappengine.Plugin.{AppengineKeys => gae}
+
+Instead of the custom `Appengine` config, settings are by default loaded on `Compile`:
+
+    gae.classpath in Compile := ...
+
+Key names accessible from the shell are now prefixed with `appengine-` (e.g. `appengine-deploy`). To deploy you app to the appengine:
+
+    > appengine-deploy
