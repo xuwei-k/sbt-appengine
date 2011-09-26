@@ -7,7 +7,7 @@ export environment variables (actually, JRebel support is not ported yet).
     export APPENGINE_SDK_HOME=~/appengine-java-sdk-1.5.0
     export JREBEL_JAR_PATH=~/jrebel/jrebel.jar
 
-put the following in the `project/plugins/build.sbt`:
+put the following in the `project/plugins.sbt`:
 
     resolvers += "Web plugin repo" at "http://siasia.github.com/maven2"
     
