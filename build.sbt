@@ -4,11 +4,7 @@ name := "sbt-appengine"
 
 organization := "com.eed3si9n"
 
-// version in Posterous := "0.3-SNAPSHOT"
-
-// version <<= (sbtVersion, version in Posterous) { (sv, nv) => "sbt" + sv + "_" + nv }
-
-version := "0.3-SNAPSHOT"
+version := "0.3.0"
 
 addSbtPlugin("com.github.siasia" %% "xsbt-web-plugin" % "0.1.2")
 
