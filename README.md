@@ -9,20 +9,31 @@ export environment variables (actually, JRebel support is not ported yet).
 
 put the following in the `project/plugins.sbt`:
 
-    resolvers += "Web plugin repo" at "http://siasia.github.com/maven2"
+```scala
+resolvers += "Web plugin repo" at "http://siasia.github.com/maven2"
     
-    addSbtPlugin("com.github.siasia" % "xsbt-web-plugin" % "0.1.2")
+addSbtPlugin("com.github.siasia" % "xsbt-web-plugin" % "0.1.2")
     
-    addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.3.0")
+addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.3.0")
+```
 
 for `build.sbt`:
 
-    seq(appengineSettings: _*)
+```scala
+seq(appengineSettings: _*)
+```
 
 for `build.scala`:
 
-    lazy val example = Project("web", file("web"),
-      settings = Defaults.defaultSettings ++ sbtappengine.AppenginePlugin.appengineSettings)
+```scala
+import sbtappengine.Plugin._
+import AppengineKeys._
+
+lazy val example = Project("web", file("web"),
+  settings = buildSettings ++ appengineSettings ++
+             Seq( // your settings here
+             ))
+```
 
 you can now deploy your application like this:
 
