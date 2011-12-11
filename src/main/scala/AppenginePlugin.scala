@@ -6,8 +6,8 @@ import sbt.Process._
 object Plugin extends sbt.Plugin {
   import Keys._
   import Project.Initialize
+  import com.github.siasia.PluginKeys._
   import com.github.siasia.WebPlugin
-  import WebPlugin._
   
   object AppengineKeys {
     lazy val requestLogs    = InputKey[Unit]("appengine-request-logs", "Write request logs in Apache common log format.")
@@ -32,14 +32,15 @@ object Plugin extends sbt.Plugin {
     lazy val apiJarPath     = SettingKey[File]("appengine-api-jar-path")
     lazy val appcfgName     = SettingKey[String]("appengine-appcfg-name")
     lazy val appcfgPath     = SettingKey[File]("appengine-appcfg-path")
-    lazy val emptyMap       = TaskKey[Seq[(File, String)]]("appengine-empty-map")    
+    lazy val emptyFile      = TaskKey[File]("appengine-empty-file")
+    lazy val temporaryWarPath = SettingKey[File]("appengine-temporary-war-path")    
   }
   private val gae = AppengineKeys
   
   private def appcfgTask(action: String, outputFile: Option[String],
                          args: TaskKey[Seq[String]],
-                         depends: TaskKey[Seq[(File, String)]] = gae.emptyMap) =
-    (args, temporaryWarPath, gae.appcfgPath, streams, depends) map { (args, w, appcfgPath, s, m) =>
+                         depends: TaskKey[File] = gae.emptyFile) =
+    (args, gae.temporaryWarPath, gae.appcfgPath, streams, depends) map { (args, w, appcfgPath, s, m) =>
       val terminal = (Some(jline.Terminal.getTerminal)
         filter {_.isInstanceOf[jline.UnixTerminal]}
         map {_.asInstanceOf[jline.UnixTerminal] })
@@ -79,16 +80,16 @@ object Plugin extends sbt.Plugin {
   private def osBatchSuffix = if (isWindows) ".cmd" else ".sh"
 
   lazy val baseAppengineSettings: Seq[Project.Setting[_]] = Seq(
-    webappUnmanaged  <<= (temporaryWarPath) { (dir) => dir / "WEB-INF" / "appengine-generated" *** },
-    unmanagedClasspath  <<= (unmanagedClasspath, gae.classpath) map { (orig, cp) => orig ++ cp },
+    // webappUnmanaged  <<= (gae.temporaryWarPath) { (dir) => dir / "WEB-INF" / "appengine-generated" *** },
+    unmanagedClasspath  <++= (gae.classpath) map { (cp) => cp },
 
     gae.requestLogs <<= inputTask { (args: TaskKey[Seq[String]])   => appcfgTask("request_logs", Some("request.log"), args) },
     gae.rollback <<= inputTask { (args: TaskKey[Seq[String]])      => appcfgTask("rollback", None, args) },
-    gae.deploy <<= inputTask { (args: TaskKey[Seq[String]])        => appcfgTask("update", None, args, prepareWebapp) },
-    gae.deployIndexes <<= inputTask { (args: TaskKey[Seq[String]]) => appcfgTask("update_indexes", None, args, prepareWebapp) },
-    gae.deployCron <<= inputTask { (args: TaskKey[Seq[String]])    => appcfgTask("update_cron", None, args, prepareWebapp) },
-    gae.deployQueues <<= inputTask { (args: TaskKey[Seq[String]])  => appcfgTask("update_queues", None, args, prepareWebapp) },
-    gae.deployDos <<= inputTask { (args: TaskKey[Seq[String]])     => appcfgTask("update_dos", None, args, prepareWebapp) },
+    gae.deploy <<= inputTask { (args: TaskKey[Seq[String]])        => appcfgTask("update", None, args, packageWar) },
+    gae.deployIndexes <<= inputTask { (args: TaskKey[Seq[String]]) => appcfgTask("update_indexes", None, args, packageWar) },
+    gae.deployCron <<= inputTask { (args: TaskKey[Seq[String]])    => appcfgTask("update_cron", None, args, packageWar) },
+    gae.deployQueues <<= inputTask { (args: TaskKey[Seq[String]])  => appcfgTask("update_queues", None, args, packageWar) },
+    gae.deployDos <<= inputTask { (args: TaskKey[Seq[String]])     => appcfgTask("update_dos", None, args, packageWar) },
     gae.cronInfo <<= inputTask { (args: TaskKey[Seq[String]])      => appcfgTask("cron_info", None, args) },
 
     gae.sdkVersion <<= (gae.libUserPath) { (dir) => buildSdkVersion(dir) },
@@ -105,7 +106,8 @@ object Plugin extends sbt.Plugin {
     gae.apiJarPath <<= (gae.libUserPath, gae.apiJarName) { (dir, name) => dir / name },
     gae.appcfgName := "appcfg" + osBatchSuffix,
     gae.appcfgPath <<= (gae.binPath, gae.appcfgName) { (dir, name) => dir / name },
-    gae.emptyMap := Nil  
+    gae.emptyFile := file(""),
+    gae.temporaryWarPath <<= target / "webapp"  
   )
 
   lazy val webSettings = appengineSettings

@@ -4,9 +4,11 @@ name := "sbt-appengine"
 
 organization := "com.eed3si9n"
 
-version := "0.3.0"
+version := "0.3.1"
 
-addSbtPlugin("com.github.siasia" %% "xsbt-web-plugin" % "0.1.2")
+libraryDependencies <+= (sbtVersion) { sv =>
+  "com.github.siasia" %% "xsbt-web-plugin" % (sv + "-0.2.10")
+}
 
 scalacOptions := Seq("-deprecation", "-unchecked")
 
@@ -25,4 +27,4 @@ publishArtifact in (Compile, packageDoc) := false
 
 publishArtifact in (Compile, packageSrc) := false
 
-resolvers += "Web plugin repo" at "http://siasia.github.com/maven2"
+resolvers += "Maven.org" at "http://repo1.maven.org/maven2"
