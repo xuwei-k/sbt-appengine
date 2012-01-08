@@ -37,28 +37,25 @@ object Plugin extends sbt.Plugin {
   }
   private val gae = AppengineKeys
   
+  // see https://github.com/jberkel/android-plugin/blob/master/src/main/scala/AndroidHelpers.scala
   private def appcfgTask(action: String, outputFile: Option[String],
                          args: TaskKey[Seq[String]],
                          depends: TaskKey[File] = gae.emptyFile) =
     (args, gae.temporaryWarPath, gae.appcfgPath, streams, depends) map { (args, w, appcfgPath, s, m) =>
-      val terminal = (Some(jline.Terminal.getTerminal)
-        filter {_.isInstanceOf[jline.UnixTerminal]}
-        map {_.asInstanceOf[jline.UnixTerminal] })
-      val command: ProcessBuilder = <x>
-        {appcfgPath.absolutePath} {args.mkString(" ")} {action} {w.absolutePath} {outputFile.mkString}
-      </x>
-      s.log.debug("Executing command " + command)
-      terminal.foreach(_.restoreTerminal)
-      try {
-        val exitValue = command.run(true).exitValue() // don't buffer output
-        if(exitValue == 0) None
-        else Some("Nonzero exit value: " + exitValue)
-        ()
-      } finally {
-        terminal.foreach(_.initializeTerminal)
+      val appcfg: Seq[String] = Seq(appcfgPath.absolutePath.toString) ++ args ++ Seq(action, w.absolutePath) ++ outputFile.toSeq
+      s.log.debug(appcfg.mkString(" "))
+      val out = new StringBuffer
+      val process = appcfg.run(true)
+      val exit = process.exitValue()
+      if (exit != 0) {
+        s.log.error(out.toString)
+        sys.error("error executing appcfg")
       }
+      else s.log.info(out.toString)
+      process.destroy()
+      ()
     }
-
+  
   private def buildAppengineSdkPath: File = {
     val sdk = System.getenv("APPENGINE_SDK_HOME")
     if (sdk == null) sys.error("You need to set APPENGINE_SDK_HOME")
