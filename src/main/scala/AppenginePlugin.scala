@@ -48,14 +48,13 @@ object Plugin extends sbt.Plugin {
       val appcfg: Seq[String] = Seq(appcfgPath.absolutePath.toString) ++ args ++ Seq(action, w.absolutePath) ++ outputFile.toSeq
       s.log.debug(appcfg.mkString(" "))
       val out = new StringBuffer
-      val process = appcfg.run(true)
-      val exit = process.exitValue()
+      val exit = appcfg!<
+      
       if (exit != 0) {
         s.log.error(out.toString)
         sys.error("error executing appcfg")
       }
       else s.log.info(out.toString)
-      process.destroy()
       ()
     }
   
