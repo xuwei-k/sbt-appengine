@@ -4,7 +4,7 @@ name := "sbt-appengine"
 
 organization := "com.eed3si9n"
 
-version := "0.4.0-SNAPSHOT"
+version := "0.4.0"
 
 description := "sbt plugin to deploy on appengine"
 
@@ -16,11 +16,6 @@ libraryDependencies <++= (scalaVersion, sbtVersion) { (scalaV, sv) => Seq(
 )}
 
 scalacOptions := Seq("-deprecation", "-unchecked")
-
-publishTo <<= version { (v: String) =>
-  if(v endsWith "-SNAPSHOT") Some("Scala Tools Nexus" at "http://nexus.scala-tools.org/content/repositories/snapshots/")
-  else Some("Scala Tools Nexus" at "http://nexus.scala-tools.org/content/repositories/releases/")
-}
 
 credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
 
@@ -39,3 +34,14 @@ resolvers += "spray repo" at "http://repo.spray.cc"
 seq(lsSettings :_*)
 
 LsKeys.tags in LsKeys.lsync := Seq("sbt", "appengine", "gae", "web")
+
+publishMavenStyle := false
+
+publishTo <<= (version) { version: String =>
+   val scalasbt = "http://scalasbt.artifactoryonline.com/scalasbt/"
+   val (name, u) = if (version.contains("-SNAPSHOT")) ("sbt-plugin-snapshots", scalasbt+"sbt-plugin-snapshots")
+                   else ("sbt-plugin-releases", scalasbt+"sbt-plugin-releases")
+   Some(Resolver.url(name, url(u))(Resolver.ivyStylePatterns))
+}
+
+credentials += Credentials(Path.userHome / ".ivy2" / ".sbtcredentials")

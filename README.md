@@ -1,11 +1,15 @@
 sbt-appengine is a sbt 0.10+ port of the awesome [sbt-appengine-plugin][1] by [yasushi][2].
 
-usage
-=====
+requirements
+------------
+
 export environment variables (`JREBEL_PATH` is optional).
 
     export APPENGINE_SDK_HOME=/Applications/appengine-java-sdk-1.6.2.1
     export JREBEL_PATH=/Applications/ZeroTurnaround/JRebel/jrebel.jar
+
+usage
+-----
 
 put the following in the `project/plugins.sbt`:
 
@@ -13,6 +17,12 @@ put the following in the `project/plugins.sbt`:
 resolvers += "spray repo" at "http://repo.spray.cc"
 
 addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.4.0")
+
+resolvers ++= Seq(
+  "spray repo" at "http://repo.spray.cc",
+  Resolver.url("sbt-plugin-releases",
+    url("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns)
+)
 ```
 
 for `build.sbt`:
