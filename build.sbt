@@ -4,7 +4,7 @@ name := "sbt-appengine"
 
 organization := "com.eed3si9n"
 
-version := "0.3.2-SNAPSHOT"
+version := "0.4.0-SNAPSHOT"
 
 description := "sbt plugin to deploy on appengine"
 
@@ -13,7 +13,6 @@ licenses := Seq("MIT License" -> url("https://github.com/sbt/sbt-appengine/blob/
 libraryDependencies <++= (scalaVersion, sbtVersion) { (scalaV, sv) => Seq(
   "com.github.siasia" %% "xsbt-web-plugin" % (sv + "-0.2.10"),
   "cc.spray" % "sbt-revolver" % "0.6.0" extra("scalaVersion" -> scalaV, "sbtVersion" -> sv)
-    from "http://repo.spray.cc/cc/spray/sbt-revolver_2.9.1_0.11.2/0.6.0/sbt-revolver-0.6.0.jar"
 )}
 
 scalacOptions := Seq("-deprecation", "-unchecked")

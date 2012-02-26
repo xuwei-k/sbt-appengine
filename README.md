@@ -2,17 +2,17 @@ sbt-appengine is a sbt 0.10+ port of the awesome [sbt-appengine-plugin][1] by [y
 
 usage
 =====
-export environment variables (actually, JRebel support is not ported yet).
+export environment variables (`JREBEL_PATH` is optional).
 
-    export APPENGINE_SDK_HOME=~/appengine-java-sdk-1.5.0
-    export JREBEL_JAR_PATH=~/jrebel/jrebel.jar
+    export APPENGINE_SDK_HOME=/Applications/appengine-java-sdk-1.6.2.1
+    export JREBEL_PATH=/Applications/ZeroTurnaround/JRebel/jrebel.jar
 
 put the following in the `project/plugins.sbt`:
 
 ```scala
 resolvers += "spray repo" at "http://repo.spray.cc"
 
-addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.3.1")
+addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.4.0")
 ```
 
 for `build.sbt`:
@@ -39,13 +39,18 @@ you can now deploy your application like this:
 
     > appengine-deploy
 
-to start the development server:
+to (re)start the development server in the background:
 
     > appengine-dev-server
 
 to redeploy development server continuously:
 
     > ~ appengine-dev-server
+
+to hot reload development server continuously, set `JREBEL_PATH` and:
+
+    > appengine-dev-server
+    > ~ package-war
 
 sample
 ======
