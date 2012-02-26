@@ -2,15 +2,19 @@
 
 One glaring omission in [sbt-appengine][1] when it was ported from [@Yasushi][1]'s [sbt-appengine-plugin][3] was the ability to run development server locally from sbt shell.
 
-sbt-appengine 0.4.0 now adds `appengine-dev-server` task that runs development server in a forked vm managed using sbt-revolver. This allows triggered redeployment:
+sbt-appengine 0.4.0 adds a new task:
+
+    > appengine-dev-server
+
+This (re)starts development server in the background managed by sbt-revolver. This also allows triggered redeployment:
 
     > ~ appengine-dev-server
 
-But wait there's more. By installing [JRebel][4] (there's a free Scala license) and setting the path as:
+But wait there's more! By installing [JRebel][4] (there's a free Scala license) and setting the path as:
 
     export JREBEL_PATH=/Applications/ZeroTurnaround/JRebel/jrebel.jar
 
-development server is run under JRebel. This allows hot reloading:
+development server launches under JRebel. This allows hot reloading:
 
     > appengine-dev-server
     > ~ package-war
