@@ -14,8 +14,6 @@ usage
 put the following in the `project/plugins.sbt`:
 
 ```scala
-resolvers += "spray repo" at "http://repo.spray.cc"
-
 addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.4.0")
 
 resolvers ++= Seq(
