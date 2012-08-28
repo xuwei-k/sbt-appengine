@@ -136,7 +136,12 @@ object Plugin extends sbt.Plugin {
     mainClass in gae.devServer := Some("com.google.appengine.tools.development.DevAppServerMain"),
     fullClasspath in gae.devServer <<= (gae.apiToolsPath) map { (jar: File) => Seq(jar).classpath },
     gae.reStartArgs in gae.devServer <<= gae.temporaryWarPath { (wp) => Seq(wp.absolutePath) },
-    javaOptions in gae.devServer <<= (gae.overridesJarPath, gae.agentJarPath, gae.reJRebelJar) { (o, a, jr) =>
+    // javaOptions in gae.devServer <<= (gae.overridesJarPath, gae.agentJarPath, gae.reJRebelJar) { (o, a, jr) =>
+    //  Seq("-ea" , "-javaagent:" + a.getAbsolutePath, "-Xbootclasspath/p:" + o.getAbsolutePath) ++
+    //  createJRebelAgentOption(revolver.SysoutLogger, jr).toSeq },
+    
+    // gae.overridesJarPath, gae.agentJarPath, gae.reJRebelJar
+    SbtCompat.impl.changeJavaOptions { (o, a, jr) =>
       Seq("-ea" , "-javaagent:" + a.getAbsolutePath, "-Xbootclasspath/p:" + o.getAbsolutePath) ++
       createJRebelAgentOption(revolver.SysoutLogger, jr).toSeq },
     gae.stopDevServer <<= gae.reStop map {identity},

@@ -10,12 +10,13 @@ description := "sbt plugin to deploy on appengine"
 
 licenses := Seq("MIT License" -> url("https://github.com/sbt/sbt-appengine/blob/master/LICENSE"))
 
-libraryDependencies <++= (scalaVersion, sbtVersion) { (scalaV, sv) => Seq(
+libraryDependencies <++= (scalaVersion in sbtPlugin, sbtVersion in sbtPlugin) { (scalaV, sv) => Seq(
   sv match {
     case "0.11.0" => "com.github.siasia" %% "xsbt-web-plugin" % "0.11.0-0.2.8"
     case "0.11.1" => "com.github.siasia" %% "xsbt-web-plugin" % "0.11.1-0.2.10"
     case "0.11.2" => "com.github.siasia" %% "xsbt-web-plugin" % "0.11.2-0.2.11"
     case "0.11.3" => "com.github.siasia" %% "xsbt-web-plugin" % "0.11.3-0.2.11.1"
+    case "0.12" => "com.github.siasia" %% "xsbt-web-plugin" % "0.12.0-0.2.11.1"
   },
   "cc.spray" % "sbt-revolver" % "0.6.1" extra("scalaVersion" -> scalaV, "sbtVersion" -> sv)
 )}
