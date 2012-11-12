@@ -105,9 +105,15 @@ object Plugin extends sbt.Plugin {
   }    
 
   lazy val baseAppengineSettings: Seq[Project.Setting[_]] = Seq(
-    // webappUnmanaged  <<= (gae.temporaryWarPath) { (dir) => dir / "WEB-INF" / "appengine-generated" *** },
-    unmanagedClasspath  <++= (gae.classpath) map { (cp) => cp },
+    // this is classpath during compile
+    unmanagedClasspath <++= (gae.classpath) map { (cp) => cp },
+    // this is classpath included into WEB-INF/lib
+    // https://developers.google.com/appengine/docs/java/tools/ant
+    // "All of these JARs are in the SDK's lib/user/ directory."
+    unmanagedClasspath in DefaultClasspathConf <++= (unmanagedClasspath) map { (cp) => cp },
 
+    // webappUnmanaged  <<= (gae.temporaryWarPath) { (dir) => dir / "WEB-INF" / "appengine-generated" *** },
+    
     gae.requestLogs <<= inputTask { (args: TaskKey[Seq[String]])   => appcfgTask("request_logs", Some("request.log"), args) },
     gae.rollback <<= inputTask { (args: TaskKey[Seq[String]])      => appcfgTask("rollback", None, args) },
     gae.deploy <<= inputTask { (args: TaskKey[Seq[String]])        => appcfgTask("update", None, args, packageWar) },
@@ -136,11 +142,6 @@ object Plugin extends sbt.Plugin {
     mainClass in gae.devServer := Some("com.google.appengine.tools.development.DevAppServerMain"),
     fullClasspath in gae.devServer <<= (gae.apiToolsPath) map { (jar: File) => Seq(jar).classpath },
     gae.reStartArgs in gae.devServer <<= gae.temporaryWarPath { (wp) => Seq(wp.absolutePath) },
-    // javaOptions in gae.devServer <<= (gae.overridesJarPath, gae.agentJarPath, gae.reJRebelJar) { (o, a, jr) =>
-    //  Seq("-ea" , "-javaagent:" + a.getAbsolutePath, "-Xbootclasspath/p:" + o.getAbsolutePath) ++
-    //  createJRebelAgentOption(revolver.SysoutLogger, jr).toSeq },
-    
-    // gae.overridesJarPath, gae.agentJarPath, gae.reJRebelJar
     SbtCompat.impl.changeJavaOptions { (o, a, jr) =>
       Seq("-ea" , "-javaagent:" + a.getAbsolutePath, "-Xbootclasspath/p:" + o.getAbsolutePath) ++
       createJRebelAgentOption(revolver.SysoutLogger, jr).toSeq },
@@ -149,7 +150,11 @@ object Plugin extends sbt.Plugin {
     gae.apiToolsJar := "appengine-tools-api.jar",
     gae.sdkVersion <<= (gae.libUserPath) { (dir) => buildSdkVersion(dir) },
     gae.sdkPath := buildAppengineSdkPath,
-    gae.classpath <<= (gae.apiJarPath) { (jar: File) => Seq(jar).classpath },
+
+    // this controls appengine classpath, which is used in unmanagedClasspath
+    gae.classpath <<= (gae.libUserPath) { (dir) => (dir ** "*.jar").classpath },
+    // gae.classpath <<= (gae.apiJarPath) { (jar: File) => Seq(jar).classpath },
+    
     gae.apiJarName <<= (gae.sdkVersion) { (v) => "appengine-api-1.0-sdk-" + v + ".jar" },
     gae.apiLabsJarName <<= (gae.sdkVersion) { (v) => "appengine-api-labs-" + v + ".jar" },
     gae.jsr107CacheJarName <<= (gae.sdkVersion) { (v) => "appengine-jsr107cache-" + v + ".jar" },
@@ -204,23 +209,4 @@ trait DataNucleus extends AppengineProject {
       mainClasses.get.map(_.absolutePath))
 }
 
-trait JRebel extends AppengineProject {
-  override def devAppserverJvmOptions =
-    if (jrebelPath.isDefined)
-      List("-javaagent:" + jrebelPath.get.absolutePath,
-           "-noverify") ++ jrebelJvmOptions ++ super.devAppserverJvmOptions
-    else
-      super.devAppserverJvmOptions
-
-  def jrebelJvmOptions:Seq[String] = List()
-  def jrebelPath = {
-    val jrebel = System.getenv("JREBEL_JAR_PATH")
-    if (jrebel == null) {
-      log.error("You need to set JREBEL_JAR_PATH")
-      None
-    } else
-      Some(Path.fromFile(new File(jrebel)))
-  }
-
-}
 */
