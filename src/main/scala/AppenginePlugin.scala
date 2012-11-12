@@ -112,9 +112,7 @@ object Plugin extends sbt.Plugin {
     // https://developers.google.com/appengine/docs/java/tools/ant
     // "All of these JARs are in the SDK's lib/user/ directory."
     unmanagedClasspath in DefaultClasspathConf <++= (unmanagedClasspath) map { (cp) => cp },
-
-    // webappUnmanaged  <<= (gae.temporaryWarPath) { (dir) => dir / "WEB-INF" / "appengine-generated" *** },
-    
+        
     gae.requestLogs <<= inputTask { (args: TaskKey[Seq[String]])   => appcfgTask("request_logs", Some("request.log"), args) },
     gae.rollback <<= inputTask { (args: TaskKey[Seq[String]])      => appcfgTask("rollback", None, args) },
     gae.deploy <<= inputTask { (args: TaskKey[Seq[String]])        => appcfgTask("update", None, args, packageWar) },
@@ -188,7 +186,9 @@ object Plugin extends sbt.Plugin {
         val testingjars = (lib / "testing" * "*.jar").get
         cp ++ Attributed.blankSeq(impljars ++ testingjars)
       }
-    ))
+    )) ++
+    Seq(
+      watchSources <++= (webappResources in Compile) map { (wr) => (wr ** "*").get })
 }
 
 /*

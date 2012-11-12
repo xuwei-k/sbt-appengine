@@ -1,0 +1,11 @@
+## bug fixes and minor enhancements
+
+- Uses alternative path for local datastore backing. [#14][14] reported by [@greenrd][@greenrd]
+- Adds static files to watch sources. [#15][15] reported by [@greenrd][@greenrd]
+- Includes appengine sdk jars into war to fix dev server. [#16][16] reported by [@mmakowski][@mmakowski]
+
+  [14]: https://github.com/sbt/sbt-appengine/issues/14
+  [15]: https://github.com/sbt/sbt-appengine/issues/15
+  [16]: https://github.com/sbt/sbt-appengine/issues/16
+  [@mmakowski]: https://github.com/mmakowski
+  [@greenrd]: https://github.com/greenrd
