@@ -44,6 +44,7 @@ object Plugin extends sbt.Plugin {
     lazy val agentJarPath   = SettingKey[File]("appengine-agent-jar-path")
     lazy val emptyFile      = TaskKey[File]("appengine-empty-file")
     lazy val temporaryWarPath = SettingKey[File]("appengine-temporary-war-path")
+    lazy val localDbPath    = SettingKey[File]("appengine-local-db-path")
   }
   private val gae = AppengineKeys
   
@@ -141,9 +142,11 @@ object Plugin extends sbt.Plugin {
     },
     mainClass in gae.devServer := Some("com.google.appengine.tools.development.DevAppServerMain"),
     fullClasspath in gae.devServer <<= (gae.apiToolsPath) map { (jar: File) => Seq(jar).classpath },
+    gae.localDbPath in gae.devServer <<= target / "local_db.bin",
     gae.reStartArgs in gae.devServer <<= gae.temporaryWarPath { (wp) => Seq(wp.absolutePath) },
-    SbtCompat.impl.changeJavaOptions { (o, a, jr) =>
-      Seq("-ea" , "-javaagent:" + a.getAbsolutePath, "-Xbootclasspath/p:" + o.getAbsolutePath) ++
+    SbtCompat.impl.changeJavaOptions { (o, a, jr, ldb) =>
+      Seq("-ea" , "-javaagent:" + a.getAbsolutePath, "-Xbootclasspath/p:" + o.getAbsolutePath,
+        "-Ddatastore.backing_store=" + ldb.getAbsolutePath) ++
       createJRebelAgentOption(revolver.SysoutLogger, jr).toSeq },
     gae.stopDevServer <<= gae.reStop map {identity},
 

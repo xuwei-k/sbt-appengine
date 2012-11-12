@@ -8,9 +8,9 @@ import sbt._
 trait SbtCompat {
   /**
    * Changes javaOptions by using transformator function
-   * (overridesJarPath, agentJarPath, reJRebelJar) => newJavaOptions
+   * (overridesJarPath, agentJarPath, reJRebelJar, localDbPath in devServer) => newJavaOptions
    */
-  def changeJavaOptions(f: (File, File, String) => Seq[String]): Setting[_]
+  def changeJavaOptions(f: (File, File, String, File) => Seq[String]): Setting[_]
 }
 
 object SbtCompat {
