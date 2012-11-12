@@ -45,6 +45,8 @@ object Plugin extends sbt.Plugin {
     lazy val emptyFile      = TaskKey[File]("appengine-empty-file")
     lazy val temporaryWarPath = SettingKey[File]("appengine-temporary-war-path")
     lazy val localDbPath    = SettingKey[File]("appengine-local-db-path")
+    lazy val debug          = SettingKey[Boolean]("appengine-debug")
+    lazy val debugPort      = SettingKey[Int]("appengine-debug-port")
   }
   private val gae = AppengineKeys
   
@@ -142,9 +144,13 @@ object Plugin extends sbt.Plugin {
     fullClasspath in gae.devServer <<= (gae.apiToolsPath) map { (jar: File) => Seq(jar).classpath },
     gae.localDbPath in gae.devServer <<= target / "local_db.bin",
     gae.reStartArgs in gae.devServer <<= gae.temporaryWarPath { (wp) => Seq(wp.absolutePath) },
-    SbtCompat.impl.changeJavaOptions { (o, a, jr, ldb) =>
+    // http://thoughts.inphina.com/2010/06/24/remote-debugging-google-app-engine-application-on-eclipse/
+    gae.debug in gae.devServer := true,
+    gae.debugPort in gae.devServer := 1044,
+    SbtCompat.impl.changeJavaOptions { (o, a, jr, ldb, d, dp) =>
       Seq("-ea" , "-javaagent:" + a.getAbsolutePath, "-Xbootclasspath/p:" + o.getAbsolutePath,
         "-Ddatastore.backing_store=" + ldb.getAbsolutePath) ++
+      (if (d) Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=" + dp.toString) else Nil) ++
       createJRebelAgentOption(revolver.SysoutLogger, jr).toSeq },
     gae.stopDevServer <<= gae.reStop map {identity},
 

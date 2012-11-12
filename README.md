@@ -28,7 +28,7 @@ for `build.sbt`:
 ```scala
 libraryDependencies += "org.mortbay.jetty" % "jetty" % "6.1.22" % "container"
 
-seq(appengineSettings: _*)
+appengineSettings
 ```
 
 for `build.scala`:
@@ -59,6 +59,8 @@ to hot reload development server continuously, set `JREBEL_PATH` and:
 
     > appengine-dev-server
     > ~ package-war
+
+by default development server runs in debug mode. IDE can connect to it via port 1044.
 
 sample
 ======
