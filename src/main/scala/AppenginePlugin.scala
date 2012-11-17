@@ -47,6 +47,7 @@ object Plugin extends sbt.Plugin {
     lazy val localDbPath    = SettingKey[File]("appengine-local-db-path")
     lazy val debug          = SettingKey[Boolean]("appengine-debug")
     lazy val debugPort      = SettingKey[Int]("appengine-debug-port")
+    lazy val includeLibUser = SettingKey[Boolean]("appengine-include-lib-user")
   }
   private val gae = AppengineKeys
   
@@ -158,9 +159,12 @@ object Plugin extends sbt.Plugin {
     gae.sdkVersion <<= (gae.libUserPath) { (dir) => buildSdkVersion(dir) },
     gae.sdkPath := buildAppengineSdkPath,
 
+    gae.includeLibUser := true,
     // this controls appengine classpath, which is used in unmanagedClasspath
-    gae.classpath <<= (gae.libUserPath) { (dir) => (dir ** "*.jar").classpath },
-    // gae.classpath <<= (gae.apiJarPath) { (jar: File) => Seq(jar).classpath },
+    gae.classpath <<= (gae.includeLibUser, gae.libUserPath) { (b, dir) =>
+      if (b) (dir ** "*.jar").classpath
+      else Nil
+    },
     
     gae.apiJarName <<= (gae.sdkVersion) { (v) => "appengine-api-1.0-sdk-" + v + ".jar" },
     gae.apiLabsJarName <<= (gae.sdkVersion) { (v) => "appengine-api-labs-" + v + ".jar" },
@@ -178,7 +182,7 @@ object Plugin extends sbt.Plugin {
     gae.overridesJarPath <<= (gae.overridePath) { (dir) => dir / "appengine-dev-jdk-overrides.jar" },
     gae.agentJarPath <<= (gae.libPath) { (dir) => dir / "agent" / "appengine-agent.jar" },
     gae.emptyFile := file(""),
-    gae.temporaryWarPath <<= target / "webapp"  
+    gae.temporaryWarPath <<= target / "webapp"
   )
 
   lazy val webSettings = appengineSettings
