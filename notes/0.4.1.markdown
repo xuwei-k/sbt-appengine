@@ -1,9 +1,9 @@
 ## bug fixes and minor enhancements
 
-- Adds debugging JVM options to dev server. [#12][12] reported by [@greenrd][@greenrd] 
-- Uses alternative path for local datastore backing for dev server. [#14][14] reported by [@greenrd][@greenrd]
-- Adds static files to watch sources. [#15][15] reported by [@greenrd][@greenrd]
-- Includes appengine sdk jars into war to fix dev server. [#16][16] reported by [@mmakowski][@mmakowski]
+- Adds debugging JVM options to the dev server. [#12][12] reported by [@greenrd][@greenrd] 
+- Uses alternative path for the local datastore backing for the dev server. [#14][14] reported by [@greenrd][@greenrd]
+- Adds static files to the watched sources during [triggered execution][t]. [#15][15] reported by [@greenrd][@greenrd]
+- Includes appengine sdk jars into the generated war to fix the dev server. [#16][16] reported by [@mmakowski][@mmakowski]
 
   [12]: https://github.com/sbt/sbt-appengine/issues/12
   [14]: https://github.com/sbt/sbt-appengine/issues/14
@@ -11,3 +11,4 @@
   [16]: https://github.com/sbt/sbt-appengine/issues/16
   [@mmakowski]: https://github.com/mmakowski
   [@greenrd]: https://github.com/greenrd
+  [t]: http://www.scala-sbt.org/release/docs/Howto/triggered.html
