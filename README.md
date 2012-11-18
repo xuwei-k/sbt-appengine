@@ -14,7 +14,7 @@ usage
 put the following in the `project/plugins.sbt`:
 
 ```scala
-addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.4.0")
+addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.4.1")
 
 resolvers ++= Seq(
   "spray repo" at "http://repo.spray.cc",
@@ -67,23 +67,12 @@ sample
 
 - [simple sample][3]
 
-known issues and workarounds
-======
+note
+====
 
 When trying to launch the dev server with `appengine-dev-server`, you might run
 into the following exception: `java.lang.RuntimeException: Unable to restore the previous TimeZone`.
-
-This bug was introduced in a java 6 update.
-
-The workaround is simple, fortunately. In your build settings where you include
-the appengine settings, you must pass in the following jvm args to the dev
-server launch `-Dappengine.user.timezone=UTC`.
-
-```
-javaOptions in (Compile, gae.devServer) += "-Dappengine.user.timezone=UTC"
-```
-
-[appengine disscussion about the issue][4]
+[This issue][4] has been resolved in the latest App Engine SDK.
 
   [1]: https://github.com/Yasushi/sbt-appengine-plugin
   [2]: https://github.com/Yasushi
