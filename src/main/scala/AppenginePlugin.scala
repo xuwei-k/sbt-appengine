@@ -151,6 +151,7 @@ object Plugin extends sbt.Plugin {
     SbtCompat.impl.changeJavaOptions { (o, a, jr, ldb, d, dp) =>
       Seq("-ea" , "-javaagent:" + a.getAbsolutePath, "-Xbootclasspath/p:" + o.getAbsolutePath,
         "-Ddatastore.backing_store=" + ldb.getAbsolutePath) ++
+      Seq("-Djava.awt.headless=true") ++
       (if (d) Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=" + dp.toString) else Nil) ++
       createJRebelAgentOption(revolver.SysoutLogger, jr).toSeq },
     gae.stopDevServer <<= gae.reStop map {identity},

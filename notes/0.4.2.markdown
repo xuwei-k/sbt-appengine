@@ -1,0 +1,6 @@
+## bug fixes and minor enhancements
+
+- Prevent dev server from showing up on OSX Dock. [#21][21] reported by [@stephanos][@stephanos]
+
+  [21]: https://github.com/sbt/sbt-appengine/issues/21
+  [@stephanos]: https://github.com/stephanos
