@@ -4,7 +4,7 @@
 
 > App Engine Backends are instances of your application that are exempt from request deadlines and have access to more memory and CPU than normal instances.
 
-[@stephanos][@stephanos] contributed commands to manage backends.
+[@stephanos][@stephanos] contributed commands to manage backends [#23][23].
 
 To deploy your backend application(s):
 
@@ -20,3 +20,4 @@ To stop a backend instance:
 
   [backends]: https://developers.google.com/appengine/docs/java/backends/overview
   [@stephanos]: https://github.com/stephanos
+  [23]: https://github.com/sbt/sbt-appengine/pull/23
