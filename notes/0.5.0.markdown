@@ -1,0 +1,22 @@
+## Backends command support
+
+[Backends Java API Overview][backends]:
+
+> App Engine Backends are instances of your application that are exempt from request deadlines and have access to more memory and CPU than normal instances.
+
+[@stephanos][@stephanos] contributed commands to manage backends.
+
+To deploy your backend application(s):
+
+    > appengine-deploy-backends
+
+To start a backend instance in the cloud:
+
+    > appengine-start-backend <backend-name>
+
+To stop a backend instance:
+
+    > appengine-stop-backend <backend-name>
+
+  [backends]: https://developers.google.com/appengine/docs/java/backends/overview
+  [@stephanos]: https://github.com/stephanos
