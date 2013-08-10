@@ -1,4 +1,4 @@
-sbtVersion in Global := "0.13.0-RC4"
+sbtVersion in Global := "0.13.0-RC5"
 
 scalaVersion in Global := "2.10.2" 
 
