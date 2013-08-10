@@ -1,14 +1,13 @@
 package sbtappengine
 
 import sbt._
-import sbt.Process._
 
 object Plugin extends sbt.Plugin {
   import Keys._
   import Project.Initialize
-  import com.github.siasia.PluginKeys._
-  import com.github.siasia.WebPlugin
-  import cc.spray.revolver
+  import com.earldouglas.xsbtwebplugin.PluginKeys._
+  import com.earldouglas.xsbtwebplugin.WebPlugin
+  import spray.revolver
   import revolver.Actions._
   import revolver.Utilities._
   
@@ -78,7 +77,7 @@ object Plugin extends sbt.Plugin {
       val appcfg: Seq[String] = Seq(appcfgPath.absolutePath.toString) ++ args ++ params
       s.log.debug(appcfg.mkString(" "))
       val out = new StringBuffer
-      val exit = appcfg!<
+      val exit = Process(appcfg)!<
 
       if (exit != 0) {
         s.log.error(out.toString)
@@ -108,16 +107,22 @@ object Plugin extends sbt.Plugin {
   private def isWindows = System.getProperty("os.name").startsWith("Windows")
   private def osBatchSuffix = if (isWindows) ".cmd" else ".sh"
 
-  private def restartDevServer(streams: TaskStreams, state: State, fkops: ForkScalaRun, mainClass: Option[String], cp: Classpath,
+  // see https://github.com/spray/sbt-revolver/blob/master/src/main/scala/spray/revolver/Actions.scala#L26
+  private def restartDevServer(streams: TaskStreams, logTag: String, project: ProjectRef, fkops: ForkScalaRun, mainClass: Option[String], cp: Classpath,
     args: Seq[String], startConfig: ExtraCmdLineOptions, war: File): revolver.AppProcess = {
-    stopAppWithStreams(streams, state)
-    startDevServer(streams, unregisterAppProcess(state, ()), fkops, mainClass, cp, args, startConfig)
+    stopAppWithStreams(streams, project)
+    startDevServer(streams, logTag, project, fkops, mainClass, cp, args, startConfig)
   }
-  private def startDevServer(streams: TaskStreams, state: State, fkops: ForkScalaRun, mainClass: Option[String], cp: Classpath,
+  // see https://github.com/spray/sbt-revolver/blob/master/src/main/scala/spray/revolver/Actions.scala#L32
+  private def startDevServer(streams: TaskStreams, logTag: String, project: ProjectRef, fkops: ForkScalaRun, mainClass: Option[String], cp: Classpath,
       args: Seq[String], startConfig: ExtraCmdLineOptions): revolver.AppProcess = {
-    assert(!state.has(appProcessKey))
-    colorLogger(streams.log).info("[YELLOW]Starting application in the background ...")
-    revolver.AppProcess {
+    assert(!revolverState.getProcess(project).exists(_.isRunning))
+
+    val color = updateStateAndGet(_.takeColor)
+    val logger = new revolver.SysoutLogger(logTag, color, streams.log.ansiCodesSupported)
+    colorLogger(streams.log).info("[YELLOW]Starting application %s in the background ..." format formatAppName(project.project, color))
+
+    revolver.AppProcess(project, color, logger) {
       Fork.java.fork(fkops.javaHome,
         Seq("-cp", cp.map(_.data.absolutePath).mkString(System.getProperty("file.separator"))) ++
         fkops.runJVMOptions ++ startConfig.jvmArgs ++ 
@@ -125,6 +130,7 @@ object Plugin extends sbt.Plugin {
         startConfig.startArgs ++ args,
         fkops.workingDirectory, Map(), false, StdoutOutput)
     }
+
   }    
 
   lazy val baseAppengineSettings: Seq[Project.Setting[_]] = Seq(
@@ -152,21 +158,23 @@ object Plugin extends sbt.Plugin {
     gae.deleteBackend <<= inputTask { (input: TaskKey[Seq[String]])   => appcfgBackendTask("delete", input, packageWar, true) },
     
     gae.devServer <<= InputTask(startArgsParser) { args =>
-      (streams, state, gae.reForkOptions in gae.devServer, mainClass in gae.devServer, fullClasspath in gae.devServer,
+      (streams, gae.reLogTag in gae.devServer, thisProjectRef, gae.reForkOptions in gae.devServer, mainClass in gae.devServer, fullClasspath in gae.devServer,
         gae.reStartArgs in gae.devServer, args, packageWar)
         .map(restartDevServer)
-        .updateState(registerAppProcess)
         .dependsOn(products in Compile) },
-    gae.reForkOptions in gae.devServer <<= (gae.temporaryWarPath,
-        javaOptions in gae.devServer, outputStrategy, javaHome) map { (wp, jvmOptions, strategy, javaHomeDir) => ForkOptions(
-        scalaJars = Nil,
+
+    gae.reForkOptions in gae.devServer <<= (gae.temporaryWarPath, scalaInstance,
+        javaOptions in gae.devServer, outputStrategy, javaHome) map { (wp, si, jvmOptions, strategy, javaHomeDir) => ForkOptions(
         javaHome = javaHomeDir,
-        connectInput = false,
         outputStrategy = strategy,
+        bootJars = si.jars,
+        workingDirectory = Some(wp),
         runJVMOptions = jvmOptions,
-        workingDirectory = Some(wp)
+        connectInput = false,
+        envVars = Map.empty
       )
     },
+    gae.reLogTag in gae.devServer := "gae.devServer",
     mainClass in gae.devServer := Some("com.google.appengine.tools.development.DevAppServerMain"),
     fullClasspath in gae.devServer <<= (gae.apiToolsPath) map { (jar: File) => Seq(jar).classpath },
     gae.localDbPath in gae.devServer <<= target / "local_db.bin",

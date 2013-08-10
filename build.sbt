@@ -4,21 +4,25 @@ name := "sbt-appengine"
 
 organization := "com.eed3si9n"
 
-version := "0.5.0"
+version := "0.6.0-SNAPSHOT"
 
 description := "sbt plugin to deploy on appengine"
 
 licenses := Seq("MIT License" -> url("https://github.com/sbt/sbt-appengine/blob/master/LICENSE"))
 
-libraryDependencies <++= (scalaVersion in sbtPlugin, sbtVersion in sbtPlugin) { (scalaV, sv) => Seq(
+libraryDependencies <++= (scalaBinaryVersion in sbtPlugin, sbtVersion in sbtPlugin) { (scalaV, sv) => Seq(
   sv match {
     case "0.11.0" => "com.github.siasia" %% "xsbt-web-plugin" % "0.11.0-0.2.8"
     case "0.11.1" => "com.github.siasia" %% "xsbt-web-plugin" % "0.11.1-0.2.10"
     case "0.11.2" => "com.github.siasia" %% "xsbt-web-plugin" % "0.11.2-0.2.11"
     case "0.11.3" => "com.github.siasia" %% "xsbt-web-plugin" % "0.11.3-0.2.11.1"
-    case "0.12" => "com.github.siasia" %% "xsbt-web-plugin" % "0.12.0-0.2.11.1"
+    case "0.12"   => "com.github.siasia" %% "xsbt-web-plugin" % "0.12.0-0.2.11.1"
+    case "0.13"   => "com.earldouglas" % "xsbt-web-plugin" % "0.4.0" extra("scalaVersion" -> scalaV, "sbtVersion" -> sv)
   },
-  "cc.spray" % "sbt-revolver" % "0.6.1" extra("scalaVersion" -> scalaV, "sbtVersion" -> sv)
+  sv match {
+    case "0.12"   => "cc.spray" % "sbt-revolver" % "0.6.1" extra("scalaVersion" -> scalaV, "sbtVersion" -> sv)
+    case "0.13"   => "io.spray" % "sbt-revolver" % "0.7.1" extra("scalaVersion" -> scalaV, "sbtVersion" -> sv) 
+  }
 )}
 
 scalacOptions := Seq("-deprecation", "-unchecked")
