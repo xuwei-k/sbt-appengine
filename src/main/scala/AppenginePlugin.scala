@@ -61,87 +61,89 @@ object Plugin extends sbt.Plugin {
   }
   private val gae = AppengineKeys
   
-  // see https://github.com/jberkel/android-plugin/blob/master/src/main/scala/AndroidHelpers.scala
-  private def appcfgTask(action: String, opts: TaskKey[Seq[String]],
-                         depends: TaskKey[File] = gae.emptyFile, outputFile: Option[String] = None) =
-    (gae.appcfgPath, opts, gae.temporaryWarPath, streams, depends) map { (appcfgPath, opts, war, s, m) =>
-      appcfgTaskCmd(appcfgPath, opts, Seq(action, war.getAbsolutePath) ++ outputFile.toSeq, s)
-    }
-
-  private def appcfgBackendTask(action: String, input: TaskKey[Seq[String]],
-                                depends: TaskKey[File] = gae.emptyFile, reqParam: Boolean = false) =
-    (gae.appcfgPath, input, gae.temporaryWarPath, streams, depends) map { (appcfgPath, input, war, s, m) =>
-      val (opts, args) = input.partition(_.startsWith("--"))
-      if (reqParam && args.isEmpty)
-        sys.error("error executing appcfg: required parameter missing")
-      appcfgTaskCmd(appcfgPath, opts, Seq("backends", war.getAbsolutePath, action) ++ args, s)
-    }
-
-  private def appcfgTaskCmd(appcfgPath: sbt.File, args: Seq[String],
-                            params: Seq[String], s: TaskStreams) = {
-      val appcfg: Seq[String] = Seq(appcfgPath.absolutePath.toString) ++ args ++ params
-      s.log.debug(appcfg.mkString(" "))
-      val out = new StringBuffer
-      val exit = Process(appcfg)!<
-
-      if (exit != 0) {
-        s.log.error(out.toString)
-        sys.error("error executing appcfg")
+  object AppEngine {
+    // see https://github.com/jberkel/android-plugin/blob/master/src/main/scala/AndroidHelpers.scala
+    def appcfgTask(action: String, opts: TaskKey[Seq[String]],
+                           depends: TaskKey[File] = gae.emptyFile, outputFile: Option[String] = None) =
+      (gae.appcfgPath, opts, gae.temporaryWarPath, streams, depends) map { (appcfgPath, opts, war, s, m) =>
+        appcfgTaskCmd(appcfgPath, opts, Seq(action, war.getAbsolutePath) ++ outputFile.toSeq, s)
       }
-      else s.log.info(out.toString)
-      ()
-    }
-  
-  private def buildAppengineSdkPath: File = {
-    val sdk = System.getenv("APPENGINE_SDK_HOME")
-    if (sdk == null) sys.error("You need to set APPENGINE_SDK_HOME")
-    new File(sdk)
-  }
 
-  private def buildSdkVersion(libUserPath: File): String = {
-    val pat = """appengine-api-1.0-sdk-(\d\.\d\.\d(?:\.\d)*)\.jar""".r
-    (libUserPath * "appengine-api-1.0-sdk-*.jar").get.toList match {
-      case jar::_ => jar.name match {
-        case pat(version) => version
-        case _ => sys.error("invalid jar file. " + jar)
+    def appcfgBackendTask(action: String, input: TaskKey[Seq[String]],
+                                  depends: TaskKey[File] = gae.emptyFile, reqParam: Boolean = false) =
+      (gae.appcfgPath, input, gae.temporaryWarPath, streams, depends) map { (appcfgPath, input, war, s, m) =>
+        val (opts, args) = input.partition(_.startsWith("--"))
+        if (reqParam && args.isEmpty)
+          sys.error("error executing appcfg: required parameter missing")
+        appcfgTaskCmd(appcfgPath, opts, Seq("backends", war.getAbsolutePath, action) ++ args, s)
       }
-      case _ => sys.error("not found appengine api jar.")
-    }
-  }
 
-  private def isWindows = System.getProperty("os.name").startsWith("Windows")
-  private def osBatchSuffix = if (isWindows) ".cmd" else ".sh"
+    def appcfgTaskCmd(appcfgPath: sbt.File, args: Seq[String],
+                              params: Seq[String], s: TaskStreams) = {
+        val appcfg: Seq[String] = Seq(appcfgPath.absolutePath.toString) ++ args ++ params
+        s.log.debug(appcfg.mkString(" "))
+        val out = new StringBuffer
+        val exit = Process(appcfg)!<
 
-  // see https://github.com/spray/sbt-revolver/blob/master/src/main/scala/spray/revolver/Actions.scala#L26
-  private def restartDevServer(streams: TaskStreams, logTag: String, project: ProjectRef, fkops: ForkScalaRun, mainClass: Option[String], cp: Classpath,
-    args: Seq[String], startConfig: ExtraCmdLineOptions, war: File,
-    onStart: Seq[() => Unit], onStop: Seq[() => Unit]): revolver.AppProcess = {
-    if (revolverState.getProcess(project).exists(_.isRunning)) {
-      colorLogger(streams.log).info("[YELLOW]Stopping dev server ...")
-      stopAppWithStreams(streams, project)
-      onStop foreach { _.apply() }
+        if (exit != 0) {
+          s.log.error(out.toString)
+          sys.error("error executing appcfg")
+        }
+        else s.log.info(out.toString)
+        ()
+      }
+    
+    def buildAppengineSdkPath: File = {
+      val sdk = System.getenv("APPENGINE_SDK_HOME")
+      if (sdk == null) sys.error("You need to set APPENGINE_SDK_HOME")
+      new File(sdk)
     }
-    startDevServer(streams, logTag, project, fkops, mainClass, cp, args, startConfig, onStart)
-  }
-  // see https://github.com/spray/sbt-revolver/blob/master/src/main/scala/spray/revolver/Actions.scala#L32
-  private def startDevServer(streams: TaskStreams, logTag: String, project: ProjectRef, fkops: ForkScalaRun, mainClass: Option[String], cp: Classpath,
-      args: Seq[String], startConfig: ExtraCmdLineOptions, onStart: Seq[() => Unit]): revolver.AppProcess = {
-    assert(!revolverState.getProcess(project).exists(_.isRunning))
 
-    val color = updateStateAndGet(_.takeColor)
-    val logger = new revolver.SysoutLogger(logTag, color, streams.log.ansiCodesSupported)
-    colorLogger(streams.log).info("[YELLOW]Starting dev server in the background ...")
-    onStart foreach { _.apply() }
-    val appProcess = revolver.AppProcess(project, color, logger) {
-      Fork.java.fork(fkops.javaHome,
-        Seq("-cp", cp.map(_.data.absolutePath).mkString(System.getProperty("file.separator"))) ++
-        fkops.runJVMOptions ++ startConfig.jvmArgs ++ 
-        Seq(mainClass.get) ++
-        startConfig.startArgs ++ args,
-        fkops.workingDirectory, Map(), false, StdoutOutput)
+    def buildSdkVersion(libUserPath: File): String = {
+      val pat = """appengine-api-1.0-sdk-(\d\.\d\.\d(?:\.\d)*)\.jar""".r
+      (libUserPath * "appengine-api-1.0-sdk-*.jar").get.toList match {
+        case jar::_ => jar.name match {
+          case pat(version) => version
+          case _ => sys.error("invalid jar file. " + jar)
+        }
+        case _ => sys.error("not found appengine api jar.")
+      }
     }
-    registerAppProcess(project, appProcess)
-    appProcess
+
+    def isWindows = System.getProperty("os.name").startsWith("Windows")
+    def osBatchSuffix = if (isWindows) ".cmd" else ".sh"
+
+    // see https://github.com/spray/sbt-revolver/blob/master/src/main/scala/spray/revolver/Actions.scala#L26
+    def restartDevServer(streams: TaskStreams, logTag: String, project: ProjectRef, fkops: ForkScalaRun, mainClass: Option[String], cp: Classpath,
+      args: Seq[String], startConfig: ExtraCmdLineOptions, war: File,
+      onStart: Seq[() => Unit], onStop: Seq[() => Unit]): revolver.AppProcess = {
+      if (revolverState.getProcess(project).exists(_.isRunning)) {
+        colorLogger(streams.log).info("[YELLOW]Stopping dev server ...")
+        stopAppWithStreams(streams, project)
+        onStop foreach { _.apply() }
+      }
+      startDevServer(streams, logTag, project, fkops, mainClass, cp, args, startConfig, onStart)
+    }
+    // see https://github.com/spray/sbt-revolver/blob/master/src/main/scala/spray/revolver/Actions.scala#L32
+    def startDevServer(streams: TaskStreams, logTag: String, project: ProjectRef, fkops: ForkScalaRun, mainClass: Option[String], cp: Classpath,
+        args: Seq[String], startConfig: ExtraCmdLineOptions, onStart: Seq[() => Unit]): revolver.AppProcess = {
+      assert(!revolverState.getProcess(project).exists(_.isRunning))
+
+      val color = updateStateAndGet(_.takeColor)
+      val logger = new revolver.SysoutLogger(logTag, color, streams.log.ansiCodesSupported)
+      colorLogger(streams.log).info("[YELLOW]Starting dev server in the background ...")
+      onStart foreach { _.apply() }
+      val appProcess = revolver.AppProcess(project, color, logger) {
+        Fork.java.fork(fkops.javaHome,
+          Seq("-cp", cp.map(_.data.absolutePath).mkString(System.getProperty("file.separator"))) ++
+          fkops.runJVMOptions ++ startConfig.jvmArgs ++ 
+          Seq(mainClass.get) ++
+          startConfig.startArgs ++ args,
+          fkops.workingDirectory, Map(), false, StdoutOutput)
+      }
+      registerAppProcess(project, appProcess)
+      appProcess
+    }
   }
 
   lazy val baseAppengineSettings: Seq[Project.Setting[_]] = Seq(
@@ -152,26 +154,26 @@ object Plugin extends sbt.Plugin {
     // "All of these JARs are in the SDK's lib/user/ directory."
     unmanagedClasspath in DefaultClasspathConf <++= (unmanagedClasspath) map { (cp) => cp },
         
-    gae.requestLogs <<= inputTask { (input: TaskKey[Seq[String]])   => appcfgTask("request_logs", input, outputFile = Some("request.log")) },
-    gae.rollback <<= inputTask { (input: TaskKey[Seq[String]])      => appcfgTask("rollback", input) },
-    gae.deploy <<= inputTask { (input: TaskKey[Seq[String]])        => appcfgTask("update", input, packageWar) },
-    gae.deployIndexes <<= inputTask { (input: TaskKey[Seq[String]]) => appcfgTask("update_indexes", input, packageWar) },
-    gae.deployCron <<= inputTask { (input: TaskKey[Seq[String]])    => appcfgTask("update_cron", input, packageWar) },
-    gae.deployQueues <<= inputTask { (input: TaskKey[Seq[String]])  => appcfgTask("update_queues", input, packageWar) },
-    gae.deployDos <<= inputTask { (input: TaskKey[Seq[String]])     => appcfgTask("update_dos", input, packageWar) },
-    gae.cronInfo <<= inputTask { (input: TaskKey[Seq[String]])      => appcfgTask("cron_info", input) },
+    gae.requestLogs <<= inputTask { (input: TaskKey[Seq[String]])   => AppEngine.appcfgTask("request_logs", input, outputFile = Some("request.log")) },
+    gae.rollback <<= inputTask { (input: TaskKey[Seq[String]])      => AppEngine.appcfgTask("rollback", input) },
+    gae.deploy <<= inputTask { (input: TaskKey[Seq[String]])        => AppEngine.appcfgTask("update", input, packageWar) },
+    gae.deployIndexes <<= inputTask { (input: TaskKey[Seq[String]]) => AppEngine.appcfgTask("update_indexes", input, packageWar) },
+    gae.deployCron <<= inputTask { (input: TaskKey[Seq[String]])    => AppEngine.appcfgTask("update_cron", input, packageWar) },
+    gae.deployQueues <<= inputTask { (input: TaskKey[Seq[String]])  => AppEngine.appcfgTask("update_queues", input, packageWar) },
+    gae.deployDos <<= inputTask { (input: TaskKey[Seq[String]])     => AppEngine.appcfgTask("update_dos", input, packageWar) },
+    gae.cronInfo <<= inputTask { (input: TaskKey[Seq[String]])      => AppEngine.appcfgTask("cron_info", input) },
 
-    gae.deployBackends <<= inputTask { (input: TaskKey[Seq[String]])  => appcfgBackendTask("update", input, packageWar) },
-    gae.configBackends <<= inputTask { (input: TaskKey[Seq[String]])  => appcfgBackendTask("configure", input, packageWar) },
-    gae.rollbackBackend <<= inputTask { (input: TaskKey[Seq[String]]) => appcfgBackendTask("rollback", input, packageWar, true) },
-    gae.startBackend <<= inputTask { (input: TaskKey[Seq[String]])    => appcfgBackendTask("start", input, packageWar, true) },
-    gae.stopBackend <<= inputTask { (input: TaskKey[Seq[String]])     => appcfgBackendTask("stop", input, packageWar, true) },
-    gae.deleteBackend <<= inputTask { (input: TaskKey[Seq[String]])   => appcfgBackendTask("delete", input, packageWar, true) },
+    gae.deployBackends <<= inputTask { (input: TaskKey[Seq[String]])  => AppEngine.appcfgBackendTask("update", input, packageWar) },
+    gae.configBackends <<= inputTask { (input: TaskKey[Seq[String]])  => AppEngine.appcfgBackendTask("configure", input, packageWar) },
+    gae.rollbackBackend <<= inputTask { (input: TaskKey[Seq[String]]) => AppEngine.appcfgBackendTask("rollback", input, packageWar, true) },
+    gae.startBackend <<= inputTask { (input: TaskKey[Seq[String]])    => AppEngine.appcfgBackendTask("start", input, packageWar, true) },
+    gae.stopBackend <<= inputTask { (input: TaskKey[Seq[String]])     => AppEngine.appcfgBackendTask("stop", input, packageWar, true) },
+    gae.deleteBackend <<= inputTask { (input: TaskKey[Seq[String]])   => AppEngine.appcfgBackendTask("delete", input, packageWar, true) },
     
     gae.devServer <<= InputTask(startArgsParser) { args =>
       (streams, gae.reLogTag in gae.devServer, thisProjectRef, gae.reForkOptions in gae.devServer, mainClass in gae.devServer, fullClasspath in gae.devServer,
         gae.reStartArgs in gae.devServer, args, packageWar, gae.onStartHooks in gae.devServer, gae.onStopHooks in gae.devServer)
-        .map(restartDevServer)
+        .map(AppEngine.restartDevServer)
         .dependsOn(products in Compile) },
 
     gae.reForkOptions in gae.devServer <<= (gae.temporaryWarPath, scalaInstance,
@@ -204,8 +206,8 @@ object Plugin extends sbt.Plugin {
     gae.stopDevServer <<= gae.reStop map {identity},
 
     gae.apiToolsJar := "appengine-tools-api.jar",
-    gae.sdkVersion <<= (gae.libUserPath) { (dir) => buildSdkVersion(dir) },
-    gae.sdkPath := buildAppengineSdkPath,
+    gae.sdkVersion <<= (gae.libUserPath) { (dir) => AppEngine.buildSdkVersion(dir) },
+    gae.sdkPath := AppEngine.buildAppengineSdkPath,
 
     gae.includeLibUser := true,
     // this controls appengine classpath, which is used in unmanagedClasspath
@@ -224,7 +226,7 @@ object Plugin extends sbt.Plugin {
     gae.libImplPath <<= gae.libPath(_ / "impl"),
     gae.apiJarPath <<= (gae.libUserPath, gae.apiJarName) { (dir, name) => dir / name },
     gae.apiToolsPath <<= (gae.libPath, gae.apiToolsJar) { _ / _ },
-    gae.appcfgName := "appcfg" + osBatchSuffix,
+    gae.appcfgName := "appcfg" + AppEngine.osBatchSuffix,
     gae.appcfgPath <<= (gae.binPath, gae.appcfgName) { (dir, name) => dir / name },
     gae.overridePath <<= gae.libPath(_ / "override"),
     gae.overridesJarPath <<= (gae.overridePath) { (dir) => dir / "appengine-dev-jdk-overrides.jar" },
