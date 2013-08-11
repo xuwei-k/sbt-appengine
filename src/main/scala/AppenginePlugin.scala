@@ -28,10 +28,11 @@ object Plugin extends sbt.Plugin {
     lazy val cronInfo       = InputKey[Unit]("appengine-cron-info", "Displays times for the next several runs of each cron job.")
     lazy val devServer      = InputKey[revolver.AppProcess]("appengine-dev-server", "Run application through development server.")
     lazy val stopDevServer  = TaskKey[Unit]("appengine-stop-dev-server", "Stop development server.")
+    lazy val enhance        = TaskKey[Unit]("appengine-enhance", "Execute ORM enhancement.")
+    lazy val enhanceCheck   = TaskKey[Unit]("appengine-enhance-check", "Just check the classes for enhancement status.")
 
     lazy val onStartHooks   = SettingKey[Seq[() => Unit]]("appengine-on-start-hooks")
     lazy val onStopHooks    = SettingKey[Seq[() => Unit]]("appengine-on-stop-hooks")
-
     lazy val apiToolsJar    = SettingKey[String]("appengine-api-tools-jar", "Name of the development startup executable jar.")
     lazy val apiToolsPath   = SettingKey[File]("appengine-api-tools-path", "Path of the development startup executable jar.")
     lazy val sdkVersion     = SettingKey[String]("appengine-sdk-version")
@@ -56,6 +57,7 @@ object Plugin extends sbt.Plugin {
     lazy val debug          = SettingKey[Boolean]("appengine-debug")
     lazy val debugPort      = SettingKey[Int]("appengine-debug-port")
     lazy val includeLibUser = SettingKey[Boolean]("appengine-include-lib-user")
+    lazy val persistenceApi = SettingKey[String]("appengine-persistence-api", "Name of the API we are enhancing for: JDO, JPA.")
   }
   private val gae = AppengineKeys
   
@@ -230,6 +232,45 @@ object Plugin extends sbt.Plugin {
     gae.emptyFile := file(""),
     gae.temporaryWarPath <<= target / "webapp"
   )
+  
+  lazy val baseAppengineDataNucleusSettings: Seq[Project.Setting[_]] = Seq(
+    packageWar <<= (packageWar) dependsOn gae.enhance,
+    gae.classpath := {
+      val appengineORMJars = (gae.libPath.value / "orm" * "*.jar").get
+      gae.classpath.value ++ appengineORMJars.classpath 
+    },
+    gae.enhance := {
+      val r: ScalaRun = (runner in Runtime).value
+      val main: String = (mainClass in gae.enhance).value.get
+      val files: Seq[File] = (exportedProducts in Runtime).value flatMap { dir =>
+        (dir.data ** "*.class").get ++ (dir.data ** "*.jdo").get
+      }
+      val args: Seq[String] = (scalacOptions in gae.enhance).value ++ (files map {_.toString}) 
+      r.run(main, (fullClasspath in gae.enhance).value map {_.data}, args, streams.value.log)
+    },
+    gae.enhanceCheck := {
+      val r: ScalaRun = (runner in Runtime).value
+      val main: String = (mainClass in gae.enhance).value.get
+      val files: Seq[File] = (exportedProducts in Runtime).value flatMap { dir =>
+        (dir.data ** "*.class").get ++ (dir.data ** "*.jdo").get
+      }
+      val args: Seq[String] = (scalacOptions in gae.enhance).value ++ Seq("-checkonly") ++ (files map {_.toString}) 
+      r.run(main, (fullClasspath in gae.enhance).value map {_.data}, args, streams.value.log)
+    },
+    mainClass in gae.enhance := Some("org.datanucleus.enhancer.DataNucleusEnhancer"),
+    fullClasspath in gae.enhance := {
+      val appengineORMEnhancerJars = (gae.libPath.value / "tools" / "orm" * "datanucleus-enhancer-*.jar").get ++
+        (gae.libPath.value / "tools" / "orm" * "asm-*.jar").get
+      (Seq(gae.apiToolsPath.value) ++ appengineORMEnhancerJars).classpath ++ (fullClasspath in Compile).value
+    },
+    // http://www.datanucleus.org/products/accessplatform_2_2/enhancer.html
+    scalacOptions in gae.enhance := ((logLevel in gae.enhance) match {
+      case Level.Debug => Seq("-v")
+      case _           => Seq()
+    } ) ++ Seq("-api", (gae.persistenceApi in gae.enhance).value),
+    logLevel in gae.enhance := Level.Debug,
+    gae.persistenceApi in gae.enhance := "JDO"
+  )
 
   lazy val webSettings = appengineSettings
   lazy val appengineSettings: Seq[Project.Setting[_]] = WebPlugin.webSettings ++
@@ -245,27 +286,6 @@ object Plugin extends sbt.Plugin {
     )) ++
     Seq(
       watchSources <++= (webappResources in Compile) map { (wr) => (wr ** "*").get })
+
+  lazy val appengineDataNucleusSettings: Seq[Project.Setting[_]] = inConfig(Compile)(baseAppengineDataNucleusSettings)
 }
-
-/*
-trait DataNucleus extends AppengineProject {
-  override def prepareWebappAction = super.prepareWebappAction dependsOn(enhance)
-
-  val appengineORMJarsPath = AppenginePathFinder(appengineLibUserPath / "orm" * "*.jar")
-  def appengineORMEnhancerClasspath = (appengineLibPath / "tools" / "orm" * "datanucleus-enhancer-*.jar")  +++ (appengineLibPath / "tools" / "orm" * "asm-*.jar")
-
-  lazy val enhance = enhanceAction
-  lazy val enhanceCheck = enhanceCheckAction
-  def enhanceAction = enhanceTask(false) dependsOn(compile) describedAs("Executes ORM enhancement.")
-  def enhanceCheckAction = enhanceTask(true) dependsOn(compile) describedAs("Just check the classes for enhancement status.")
-  def usePersistentApi = "jdo"
-  def enhanceTask(checkonly: Boolean) =
-    runTask(Some("org.datanucleus.enhancer.DataNucleusEnhancer"),
-      appengineToolsJarPath +++ appengineORMEnhancerClasspath +++ compileClasspath ,
-      List("-v",
-           "-api", usePersistentApi,
-           (if(checkonly) "-checkonly" else "")) ++
-      mainClasses.get.map(_.absolutePath))
-}
-
-*/

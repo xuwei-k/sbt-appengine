@@ -8,7 +8,7 @@ export environment variables (`JREBEL_PATH` is optional).
     export APPENGINE_SDK_HOME=/Applications/appengine-java-sdk-1.6.2.1
     export JREBEL_PATH=/Applications/ZeroTurnaround/JRebel/jrebel.jar
 
-usage
+setup
 -----
 
 put the following in the `project/plugins.sbt`:
@@ -43,6 +43,11 @@ lazy val example = Project("web", file("web"),
              ))
 ```
 
+usage
+-----
+
+### development server
+
 you can now deploy your application like this:
 
     > appengine-deploy
@@ -55,6 +60,8 @@ to redeploy development server continuously:
 
     > ~ appengine-dev-server
 
+### hot loading!
+
 to hot reload development server continuously, set `JREBEL_PATH` and:
 
     > appengine-dev-server
@@ -62,6 +69,8 @@ to hot reload development server continuously, set `JREBEL_PATH` and:
 
 by default development server runs in debug mode. IDE can connect to it via port 1044.
 
+
+### backend support
 
 you can deploy your backend application(s) like this:
 
@@ -85,6 +94,36 @@ to stop a backend instance:
 
 (gae.onStopHooks in gae.devServer in Compile) += { () =>
   println("bye")
+}
+```
+
+### DataNucleous enhancer support (experimental)
+
+sbt-appengine provides experimental support for DataNucleous enhancer. to use this, include the following in `build.sbt`:
+
+```scala
+appengineSettings
+
+appengineDataNucleusSettings
+
+gae.persistenceApi in gae.enhance in Compile := "JDO"
+```
+
+this will call the enhancer automatically on `packageWar` task. since DataNucleous expects plain Java fields, the entity class looks a bit ugly in Scala:
+
+```scala
+import javax.jdo.annotations._
+import com.google.appengine.api.datastore.Key
+
+@PersistenceCapable
+class Counter(
+  @PrimaryKey
+  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+  private[this] var key: Key,
+  @Persistent
+  private[this] var count: Int) {
+  final def getKey: Key = key
+  final def getCount: Int = count
 }
 ```
 
