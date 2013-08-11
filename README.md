@@ -114,17 +114,15 @@ this will call the enhancer automatically on `packageWar` task. since DataNucleo
 ```scala
 import javax.jdo.annotations._
 import com.google.appengine.api.datastore.Key
+import scala.annotation.target.field
 
 @PersistenceCapable
-class Counter(
-  @PrimaryKey
-  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private[this] var key: Key,
-  @Persistent
-  private[this] var count: Int) {
-  final def getKey: Key = key
-  final def getCount: Int = count
-}
+case class Counter(
+  @(PrimaryKey @field)
+  @(Persistent @field)(valueStrategy = IdGeneratorStrategy.IDENTITY)
+  var key: Key,
+  @(Persistent @field)
+  var count: Int)
 ```
 
 sample
