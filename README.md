@@ -76,14 +76,25 @@ to stop a backend instance:
     > appengine-stop-backend <backend-name>
 
 
+### `appengineDevServer` lifecyle hooks
+
+```scala
+(gae.onStartHooks in gae.devServer in Compile) += { () =>
+  println("hello")
+}
+
+(gae.onStopHooks in gae.devServer in Compile) += { () =>
+  println("bye")
+}
+```
 
 sample
-======
+------
 
 - [simple sample][3]
 
 note
-====
+----
 
 When trying to launch the dev server with `appengine-dev-server`, you might run
 into the following exception: `java.lang.RuntimeException: Unable to restore the previous TimeZone`.
