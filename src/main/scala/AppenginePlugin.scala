@@ -4,7 +4,7 @@ import sbt._
 
 object Plugin extends sbt.Plugin {
   import Keys._
-  import Project.Initialize
+  import Def.Initialize
   import com.earldouglas.xsbtwebplugin.PluginKeys._
   import com.earldouglas.xsbtwebplugin.WebPlugin
   import spray.revolver
@@ -63,21 +63,26 @@ object Plugin extends sbt.Plugin {
   
   object AppEngine {
     // see https://github.com/jberkel/android-plugin/blob/master/src/main/scala/AndroidHelpers.scala
-    def appcfgTask(action: String, opts: TaskKey[Seq[String]],
-                           depends: TaskKey[File] = gae.emptyFile, outputFile: Option[String] = None) =
-      (gae.appcfgPath, opts, gae.temporaryWarPath, streams, depends) map { (appcfgPath, opts, war, s, m) =>
-        appcfgTaskCmd(appcfgPath, opts, Seq(action, war.getAbsolutePath) ++ outputFile.toSeq, s)
+    def appcfgTask(action: String,
+                   depends: TaskKey[File] = gae.emptyFile, outputFile: Option[String] = None): Initialize[InputTask[Unit]] =
+      Def.inputTask {
+        import complete.DefaultParsers._
+        val input: Seq[String] = spaceDelimited("<arg>").parsed
+        val x = depends.value
+        appcfgTaskCmd(gae.appcfgPath.value, input, Seq(action, gae.temporaryWarPath.value.getAbsolutePath) ++ outputFile.toSeq, streams.value)
       }
-
-    def appcfgBackendTask(action: String, input: TaskKey[Seq[String]],
-                                  depends: TaskKey[File] = gae.emptyFile, reqParam: Boolean = false) =
-      (gae.appcfgPath, input, gae.temporaryWarPath, streams, depends) map { (appcfgPath, input, war, s, m) =>
+    def appcfgBackendTask(action: String,
+                          depends: TaskKey[File] = gae.emptyFile, reqParam: Boolean = false): Initialize[InputTask[Unit]] =
+      Def.inputTask {
+        import complete.DefaultParsers._
+        val input: Seq[String] = spaceDelimited("<arg>").parsed
         val (opts, args) = input.partition(_.startsWith("--"))
-        if (reqParam && args.isEmpty)
+        if (reqParam && args.isEmpty) {
           sys.error("error executing appcfg: required parameter missing")
-        appcfgTaskCmd(appcfgPath, opts, Seq("backends", war.getAbsolutePath, action) ++ args, s)
+        }
+        val x = depends.value
+        appcfgTaskCmd(gae.appcfgPath.value, opts, Seq("backends", gae.temporaryWarPath.value.getAbsolutePath) ++ args, streams.value)
       }
-
     def appcfgTaskCmd(appcfgPath: sbt.File, args: Seq[String],
                               params: Seq[String], s: TaskStreams) = {
         val appcfg: Seq[String] = Seq(appcfgPath.absolutePath.toString) ++ args ++ params
@@ -114,19 +119,19 @@ object Plugin extends sbt.Plugin {
     def osBatchSuffix = if (isWindows) ".cmd" else ".sh"
 
     // see https://github.com/spray/sbt-revolver/blob/master/src/main/scala/spray/revolver/Actions.scala#L26
-    def restartDevServer(streams: TaskStreams, logTag: String, project: ProjectRef, fkops: ForkScalaRun, mainClass: Option[String], cp: Classpath,
-      args: Seq[String], startConfig: ExtraCmdLineOptions, war: File,
+    def restartDevServer(streams: TaskStreams, logTag: String, project: ProjectRef, options: ForkOptions, mainClass: Option[String],
+      cp: Classpath, args: Seq[String], startConfig: ExtraCmdLineOptions, war: File,
       onStart: Seq[() => Unit], onStop: Seq[() => Unit]): revolver.AppProcess = {
       if (revolverState.getProcess(project).exists(_.isRunning)) {
         colorLogger(streams.log).info("[YELLOW]Stopping dev server ...")
         stopAppWithStreams(streams, project)
         onStop foreach { _.apply() }
       }
-      startDevServer(streams, logTag, project, fkops, mainClass, cp, args, startConfig, onStart)
+      startDevServer(streams, logTag, project, options, mainClass, cp, args, startConfig, onStart)
     }
     // see https://github.com/spray/sbt-revolver/blob/master/src/main/scala/spray/revolver/Actions.scala#L32
-    def startDevServer(streams: TaskStreams, logTag: String, project: ProjectRef, fkops: ForkScalaRun, mainClass: Option[String], cp: Classpath,
-        args: Seq[String], startConfig: ExtraCmdLineOptions, onStart: Seq[() => Unit]): revolver.AppProcess = {
+    def startDevServer(streams: TaskStreams, logTag: String, project: ProjectRef, options: ForkOptions, mainClass: Option[String],
+        cp: Classpath, args: Seq[String], startConfig: ExtraCmdLineOptions, onStart: Seq[() => Unit]): revolver.AppProcess = {
       assert(!revolverState.getProcess(project).exists(_.isRunning))
 
       val color = updateStateAndGet(_.takeColor)
@@ -134,19 +139,19 @@ object Plugin extends sbt.Plugin {
       colorLogger(streams.log).info("[YELLOW]Starting dev server in the background ...")
       onStart foreach { _.apply() }
       val appProcess = revolver.AppProcess(project, color, logger) {
-        Fork.java.fork(fkops.javaHome,
+        Fork.java.fork(options.javaHome,
           Seq("-cp", cp.map(_.data.absolutePath).mkString(System.getProperty("file.separator"))) ++
-          fkops.runJVMOptions ++ startConfig.jvmArgs ++ 
+          options.runJVMOptions ++ startConfig.jvmArgs ++ 
           Seq(mainClass.get) ++
           startConfig.startArgs ++ args,
-          fkops.workingDirectory, Map(), false, StdoutOutput)
+          options.workingDirectory, Map(), false, StdoutOutput)
       }
       registerAppProcess(project, appProcess)
       appProcess
     }
   }
 
-  lazy val baseAppengineSettings: Seq[Project.Setting[_]] = Seq(
+  lazy val baseAppengineSettings: Seq[Def.Setting[_]] = Seq(
     // this is classpath during compile
     unmanagedClasspath <++= (gae.classpath) map { (cp) => cp },
     // this is classpath included into WEB-INF/lib
@@ -154,28 +159,32 @@ object Plugin extends sbt.Plugin {
     // "All of these JARs are in the SDK's lib/user/ directory."
     unmanagedClasspath in DefaultClasspathConf <++= (unmanagedClasspath) map { (cp) => cp },
         
-    gae.requestLogs <<= inputTask { (input: TaskKey[Seq[String]])   => AppEngine.appcfgTask("request_logs", input, outputFile = Some("request.log")) },
-    gae.rollback <<= inputTask { (input: TaskKey[Seq[String]])      => AppEngine.appcfgTask("rollback", input) },
-    gae.deploy <<= inputTask { (input: TaskKey[Seq[String]])        => AppEngine.appcfgTask("update", input, packageWar) },
-    gae.deployIndexes <<= inputTask { (input: TaskKey[Seq[String]]) => AppEngine.appcfgTask("update_indexes", input, packageWar) },
-    gae.deployCron <<= inputTask { (input: TaskKey[Seq[String]])    => AppEngine.appcfgTask("update_cron", input, packageWar) },
-    gae.deployQueues <<= inputTask { (input: TaskKey[Seq[String]])  => AppEngine.appcfgTask("update_queues", input, packageWar) },
-    gae.deployDos <<= inputTask { (input: TaskKey[Seq[String]])     => AppEngine.appcfgTask("update_dos", input, packageWar) },
-    gae.cronInfo <<= inputTask { (input: TaskKey[Seq[String]])      => AppEngine.appcfgTask("cron_info", input) },
+    gae.requestLogs     := AppEngine.appcfgTask("request_logs", outputFile = Some("request.log")).evaluated,
+    gae.rollback        := AppEngine.appcfgTask("rollback").evaluated,
+    gae.deploy          := AppEngine.appcfgTask("update", packageWar).evaluated,
+    gae.deployIndexes   := AppEngine.appcfgTask("update_indexes", packageWar).evaluated,
+    gae.deployCron      := AppEngine.appcfgTask("update_cron", packageWar).evaluated,
+    gae.deployQueues    := AppEngine.appcfgTask("update_queues", packageWar).evaluated,
+    gae.deployDos       := AppEngine.appcfgTask("update_dos", packageWar).evaluated,
+    gae.cronInfo        := AppEngine.appcfgTask("cron_info").evaluated,
 
-    gae.deployBackends <<= inputTask { (input: TaskKey[Seq[String]])  => AppEngine.appcfgBackendTask("update", input, packageWar) },
-    gae.configBackends <<= inputTask { (input: TaskKey[Seq[String]])  => AppEngine.appcfgBackendTask("configure", input, packageWar) },
-    gae.rollbackBackend <<= inputTask { (input: TaskKey[Seq[String]]) => AppEngine.appcfgBackendTask("rollback", input, packageWar, true) },
-    gae.startBackend <<= inputTask { (input: TaskKey[Seq[String]])    => AppEngine.appcfgBackendTask("start", input, packageWar, true) },
-    gae.stopBackend <<= inputTask { (input: TaskKey[Seq[String]])     => AppEngine.appcfgBackendTask("stop", input, packageWar, true) },
-    gae.deleteBackend <<= inputTask { (input: TaskKey[Seq[String]])   => AppEngine.appcfgBackendTask("delete", input, packageWar, true) },
+    gae.deployBackends  := AppEngine.appcfgBackendTask("update", packageWar).evaluated,
+    gae.configBackends  := AppEngine.appcfgBackendTask("configure", packageWar).evaluated,
+    gae.rollbackBackend := AppEngine.appcfgBackendTask("rollback", packageWar, true).evaluated,
+    gae.startBackend    := AppEngine.appcfgBackendTask("start", packageWar, true).evaluated,
+    gae.stopBackend     := AppEngine.appcfgBackendTask("stop", packageWar, true).evaluated,
+    gae.deleteBackend   := AppEngine.appcfgBackendTask("delete", packageWar, true).evaluated,
     
-    gae.devServer <<= InputTask(startArgsParser) { args =>
-      (streams, gae.reLogTag in gae.devServer, thisProjectRef, gae.reForkOptions in gae.devServer, mainClass in gae.devServer, fullClasspath in gae.devServer,
-        gae.reStartArgs in gae.devServer, args, packageWar, gae.onStartHooks in gae.devServer, gae.onStopHooks in gae.devServer)
-        .map(AppEngine.restartDevServer)
-        .dependsOn(products in Compile) },
-
+    gae.devServer       := {
+      val args = startArgsParser.parsed
+      val x = (products in Compile).value
+      AppEngine.restartDevServer(streams.value, (gae.reLogTag in gae.devServer).value,
+        thisProjectRef.value, (gae.reForkOptions in gae.devServer).value,
+        (mainClass in gae.devServer).value, (fullClasspath in gae.devServer).value,
+        (gae.reStartArgs in gae.devServer).value, args,
+        packageWar.value,
+        (gae.onStartHooks in gae.devServer).value, (gae.onStopHooks in gae.devServer).value)
+    },
     gae.reForkOptions in gae.devServer <<= (gae.temporaryWarPath, scalaInstance,
         javaOptions in gae.devServer, outputStrategy, javaHome) map { (wp, si, jvmOptions, strategy, javaHomeDir) => ForkOptions(
         javaHome = javaHomeDir,
@@ -190,7 +199,7 @@ object Plugin extends sbt.Plugin {
     gae.reLogTag in gae.devServer := "gae.devServer",
     mainClass in gae.devServer := Some("com.google.appengine.tools.development.DevAppServerMain"),
     fullClasspath in gae.devServer <<= (gae.apiToolsPath) map { (jar: File) => Seq(jar).classpath },
-    gae.localDbPath in gae.devServer <<= target / "local_db.bin",
+    gae.localDbPath in gae.devServer := target.value / "local_db.bin",
     gae.reStartArgs in gae.devServer <<= gae.temporaryWarPath { (wp) => Seq(wp.absolutePath) },
     // http://thoughts.inphina.com/2010/06/24/remote-debugging-google-app-engine-application-on-eclipse/
     gae.debug in gae.devServer := true,
@@ -232,10 +241,10 @@ object Plugin extends sbt.Plugin {
     gae.overridesJarPath <<= (gae.overridePath) { (dir) => dir / "appengine-dev-jdk-overrides.jar" },
     gae.agentJarPath <<= (gae.libPath) { (dir) => dir / "agent" / "appengine-agent.jar" },
     gae.emptyFile := file(""),
-    gae.temporaryWarPath <<= target / "webapp"
+    gae.temporaryWarPath := target.value / "webapp"
   )
   
-  lazy val baseAppengineDataNucleusSettings: Seq[Project.Setting[_]] = Seq(
+  lazy val baseAppengineDataNucleusSettings: Seq[Def.Setting[_]] = Seq(
     packageWar <<= (packageWar) dependsOn gae.enhance,
     gae.classpath := {
       val appengineORMJars = (gae.libPath.value / "orm" * "*.jar").get
@@ -275,7 +284,7 @@ object Plugin extends sbt.Plugin {
   )
 
   lazy val webSettings = appengineSettings
-  lazy val appengineSettings: Seq[Project.Setting[_]] = WebPlugin.webSettings ++
+  lazy val appengineSettings: Seq[Def.Setting[_]] = WebPlugin.webSettings ++
     inConfig(Compile)(revolver.RevolverPlugin.Revolver.settings ++ baseAppengineSettings) ++
     inConfig(Test)(Seq(
       unmanagedClasspath <++= (gae.classpath) map { (cp) => cp },
@@ -289,5 +298,5 @@ object Plugin extends sbt.Plugin {
     Seq(
       watchSources <++= (webappResources in Compile) map { (wr) => (wr ** "*").get })
 
-  lazy val appengineDataNucleusSettings: Seq[Project.Setting[_]] = inConfig(Compile)(baseAppengineDataNucleusSettings)
+  lazy val appengineDataNucleusSettings: Seq[Def.Setting[_]] = inConfig(Compile)(baseAppengineDataNucleusSettings)
 }
