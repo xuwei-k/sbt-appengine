@@ -1,4 +1,4 @@
-sbt-appengine is a sbt 0.10+ port of the awesome [sbt-appengine-plugin][1] by [yasushi][2].
+sbt-appengine is a sbt 0.10+ port of the awesome [Yasushi/sbt-appengine-plugin][1].
 
 requirements
 ------------
@@ -8,19 +8,32 @@ export environment variables (`JREBEL_PATH` is optional).
     export APPENGINE_SDK_HOME=/Applications/appengine-java-sdk-1.6.2.1
     export JREBEL_PATH=/Applications/ZeroTurnaround/JRebel/jrebel.jar
 
-setup
------
+setup for sbt 0.13
+------------------
+
+put the following in the `project/appengine.sbt`:
+
+```scala
+addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.6.0")
+```
+
+and the following in `appengine.sbt`:
+
+```scala
+libraryDependencies += "org.mortbay.jetty" % "jetty" % "6.1.22" % "container"
+
+appengineSettings
+```
+
+setup for sbt 0.12
+------------------
 
 put the following in the `project/plugins.sbt`:
 
 ```scala
 addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.5.0")
 
-resolvers ++= Seq(
-  "spray repo" at "http://repo.spray.cc",
-  Resolver.url("sbt-plugin-releases",
-    url("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns)
-)
+resolvers += "spray repo" at "http://repo.spray.cc"
 ```
 
 for `build.sbt`:
@@ -46,46 +59,34 @@ lazy val example = Project("web", file("web"),
 usage
 -----
 
+### deploy
+
+you can deploy your application like this:
+
+    > appengineDeploy
+
 ### development server
-
-you can now deploy your application like this:
-
-    > appengine-deploy
 
 to (re)start the development server in the background:
 
-    > appengine-dev-server
+    > appengineDevServer
 
 to redeploy development server continuously:
 
-    > ~ appengine-dev-server
+    > ~ appengineDevServer
 
 ### hot loading!
 
 to hot reload development server continuously, set `JREBEL_PATH` and:
 
-    > appengine-dev-server
-    > ~ package-war
+    > appengineDevServer
+    > ~ packageWar
 
 by default development server runs in debug mode. IDE can connect to it via port 1044.
 
+### appengineDevServer lifecyle hooks
 
-### backend support
-
-you can deploy your backend application(s) like this:
-
-    > appengine-deploy-backends
-    
-to start a backend instance in the cloud:
-
-    > appengine-start-backend <backend-name>
-    
-to stop a backend instance:
-
-    > appengine-stop-backend <backend-name>
-
-
-### `appengineDevServer` lifecyle hooks
+to run a code on start/stop of dev server:
 
 ```scala
 (gae.onStartHooks in gae.devServer in Compile) += { () =>
@@ -96,6 +97,20 @@ to stop a backend instance:
   println("bye")
 }
 ```
+
+### backend support
+
+you can deploy your backend application(s) like this:
+
+    > appengineDeployBackends
+    
+to start a backend instance in the cloud:
+
+    > appengineStartBackend <backend-name>
+    
+to stop a backend instance:
+
+    > appengineStopBackend <backend-name>
 
 ### DataNucleous enhancer support (experimental)
 

@@ -17,4 +17,4 @@ This feature was contributed by [@stephanos][@stephanos] as [#25][25].
 
 ## DataNucleus Enhancer support
 
-sbt-appengine 0.6.0 also adds experimental support for DataNucleous enhancer. See [details](https://github.com/sbt/sbt-appengine).
+sbt-appengine 0.6.0 also adds experimental support for DataNucleous enhancer. See [details](https://github.com/sbt/sbt-appengine#datanucleous-enhancer-support-experimental).
