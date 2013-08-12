@@ -3,7 +3,7 @@
 
 ## for sbt 0.13
 
-sbt-appengine is ported to sbt 0.13 by updating its dependency to xsbt-web-plugin 0.4.0 and sbt-revolver 0.7.1.
+sbt-appengine is ported to sbt 0.13. Its dependencies are updated to xsbt-web-plugin 0.4.0 and sbt-revolver 0.7.1.
 
 ## appengineDevServer lifecyle hooks
 
@@ -15,6 +15,6 @@ sbt-appengine 0.6.0 adds hooks to `appengineDevServer` on start and stop.
 
 This feature was contributed by [@stephanos][@stephanos] as [#25][25].
 
-## DataNucleus Enhancer support
+## DataNucleus enhancer support
 
 sbt-appengine 0.6.0 also adds experimental support for DataNucleous enhancer. See [details](https://github.com/sbt/sbt-appengine#datanucleous-enhancer-support-experimental).
