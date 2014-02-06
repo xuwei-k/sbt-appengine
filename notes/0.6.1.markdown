@@ -1,0 +1,6 @@
+ [28]: https://github.com/sbt/sbt-appengine/pull/28
+ [@aij]: https://github.com/aij
+
+## bug fix
+
+- Fixes backends tasks that broke in 0.6.0. [#28][28] contributed by [@aij][@aij]
