@@ -81,7 +81,7 @@ object Plugin extends sbt.Plugin {
           sys.error("error executing appcfg: required parameter missing")
         }
         val x = depends.value
-        appcfgTaskCmd(gae.appcfgPath.value, opts, Seq("backends", gae.temporaryWarPath.value.getAbsolutePath) ++ args, streams.value)
+        appcfgTaskCmd(gae.appcfgPath.value, opts, Seq("backends", gae.temporaryWarPath.value.getAbsolutePath, action) ++ args, streams.value)
       }
     def appcfgTaskCmd(appcfgPath: sbt.File, args: Seq[String],
                               params: Seq[String], s: TaskStreams) = {
