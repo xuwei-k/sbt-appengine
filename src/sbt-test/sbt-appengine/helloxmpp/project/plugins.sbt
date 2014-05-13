@@ -1,6 +1,10 @@
-addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.4.0-SNAPSHOT")
+{
+  val pluginVersion = System.getProperty("plugin.version")
+  if(pluginVersion == null)
+    throw new RuntimeException("""|The system property 'plugin.version' is not defined.
+                                  |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
+  else addSbtPlugin("com.eed3si9n" % "sbt-appengine" % pluginVersion)
+}
 
-resolvers ++= Seq(
-  "spray repo" at "http://repo.spray.cc",
-  Resolver.url("sbt-plugin-releases", url("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns)
-)
+resolvers += "spray repo" at "http://repo.spray.cc"
+
