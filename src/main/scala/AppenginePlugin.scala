@@ -105,7 +105,7 @@ object Plugin extends sbt.Plugin {
     }
 
     def buildSdkVersion(libUserPath: File): String = {
-      val pat = """appengine-api-1.0-sdk-(\d\.\d\.\d(?:\.\d)*)\.jar""".r
+      val pat = """appengine-api-1.0-sdk-(\d\.\d+\.\d+(?:\.\d+)*)\.jar""".r
       (libUserPath * "appengine-api-1.0-sdk-*.jar").get.toList match {
         case jar::_ => jar.name match {
           case pat(version) => version
