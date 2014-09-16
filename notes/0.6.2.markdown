@@ -1,0 +1,6 @@
+  [32]: https://github.com/sbt/sbt-appengine/pull/32
+  [@int128]: https://github.com/int128
+
+## bug fix
+
+- Fixes invalid jar file error with SDK 1.9.10. [#32][32] by [@int128][@int128]

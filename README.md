@@ -14,7 +14,7 @@ setup for sbt 0.13
 put the following in the `project/appengine.sbt`:
 
 ```scala
-addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.6.1")
+addSbtPlugin("com.eed3si9n" % "sbt-appengine" % "0.6.2")
 ```
 
 and the following in `appengine.sbt`:

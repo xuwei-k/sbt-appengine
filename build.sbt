@@ -4,7 +4,7 @@ name := "sbt-appengine"
 
 organization := "com.eed3si9n"
 
-version := "0.6.1"
+version := "0.6.2"
 
 description := "sbt plugin to deploy on appengine"
 
