@@ -1,4 +1,4 @@
-import sbtappengine.Plugin.{AppengineKeys => gae}
+val gae = AppengineKeys
 
 name := "taskqueueexamples"
 
@@ -7,7 +7,7 @@ libraryDependencies ++= Seq(
   "org.eclipse.jetty" % "jetty-webapp" % "7.6.8.v20121106" % "container"
 )
 
-appengineSettings
+enablePlugins(AppenginePlugin)
 
 unmanagedJars in Compile ++= {
   val libUserPath = (gae.libUserPath in Compile).value

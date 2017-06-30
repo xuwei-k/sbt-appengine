@@ -1,4 +1,4 @@
-import sbtappengine.Plugin.{AppengineKeys => gae}
+val gae = AppengineKeys
 
 name := "sample"
 
@@ -10,7 +10,7 @@ libraryDependencies ++= Seq(
   "org.mortbay.jetty" % "jetty" % "6.1.22" % "container"
 )
 
-appengineSettings
+enablePlugins(AppenginePlugin)
 
 (gae.onStartHooks in gae.devServer in Compile) += { () =>
   println("hello")
