@@ -1,5 +1,3 @@
-val gae = AppengineKeys
-
 name := "sample"
 
 scalaVersion := "2.9.2"
@@ -12,14 +10,14 @@ libraryDependencies ++= Seq(
 
 enablePlugins(AppenginePlugin)
 
-(gae.onStartHooks in gae.devServer in Compile) += { () =>
+(appengineOnStartHooks in appengineDevServer in Compile) += { () =>
   println("hello")
 }
 
-(gae.onStopHooks in gae.devServer in Compile) += { () =>
+(appengineOnStopHooks in appengineDevServer in Compile) += { () =>
   println("bye")
 }
 
 appengineDataNucleusSettings
 
-gae.persistenceApi in gae.enhance in Compile := "JDO"
+appenginePersistenceApi in appengineEnhance in Compile := "JDO"

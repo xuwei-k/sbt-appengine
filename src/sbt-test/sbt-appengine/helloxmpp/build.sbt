@@ -1,5 +1,3 @@
-val gae = AppengineKeys
-
 name := "taskqueueexamples"
 
 libraryDependencies ++= Seq(
@@ -10,11 +8,11 @@ libraryDependencies ++= Seq(
 enablePlugins(AppenginePlugin)
 
 unmanagedJars in Compile ++= {
-  val libUserPath = (gae.libUserPath in Compile).value
+  val libUserPath = (appengineLibUserPath in Compile).value
   val baseDirectories = libUserPath +++ (libUserPath / "orm")
   (baseDirectories * "*.jar").classpath
 }
 
 unmanagedJars in Compile ++= {
-  (((gae.libPath in Compile).value / "shared") ** "*.jar").classpath
+  (((appengineLibPath in Compile).value / "shared") ** "*.jar").classpath
 }
