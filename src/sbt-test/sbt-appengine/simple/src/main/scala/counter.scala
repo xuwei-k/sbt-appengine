@@ -13,7 +13,7 @@ case class Counter(
   @(Persistent @field)
   var count: Int)
 
-// https://developers.google.com/appengine/docs/java/datastore/jdo/creatinggettinganddeletingdata
+// https://cloud.google.com/appengine/docs/standard/java/datastore/jdo/creatinggettinganddeletingdata
 object CounterAdapter {
   def get(key: Key): Option[Counter] = {
     val pm = PMF.instance.getPersistenceManager
