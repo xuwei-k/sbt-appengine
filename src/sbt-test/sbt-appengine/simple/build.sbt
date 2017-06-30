@@ -2,10 +2,10 @@ import sbtappengine.Plugin.{AppengineKeys => gae}
 
 name := "sample"
 
-scalaVersion := "2.9.2"
+scalaVersion := "2.11.11"
 
 libraryDependencies ++= Seq(
-  "net.databinder" %% "unfiltered-filter" % "0.6.4",
+  "ws.unfiltered" %% "unfiltered-filter" % "0.9.1",
   "javax.servlet" % "servlet-api" % "2.5" % "provided",
   "org.mortbay.jetty" % "jetty" % "6.1.22" % "container"
 )

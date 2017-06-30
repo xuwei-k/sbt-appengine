@@ -3,7 +3,7 @@ package simple
 import javax.jdo.annotations._
 import javax.jdo._
 import com.google.appengine.api.datastore.Key
-import scala.annotation.target.field
+import scala.annotation.meta.field
 
 @PersistenceCapable
 case class Counter(
