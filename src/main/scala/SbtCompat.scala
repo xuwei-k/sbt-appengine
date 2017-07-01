@@ -23,15 +23,15 @@ object SbtCompat {
 // ----
 
 object SbtCompatImpl extends SbtCompat with RevolverKeys {
-  import Plugin.{AppengineKeys => gae}
+  import AppenginePlugin.autoImport._
 
   def changeJavaOptions(f: (File, File, String, File, Boolean, Int) => Seq[String]) =
-    javaOptions in gae.devServer := f(
-      gae.overridesJarPath.value,
-      gae.agentJarPath.value,
-      gae.reJRebelJar.value,
-      (gae.localDbPath in gae.devServer).value,
-      (gae.debug in gae.devServer).value,
-      (gae.debugPort in gae.devServer).value
+    javaOptions in appengineDevServer := f(
+      appengineOverridesJarPath.value,
+      appengineAgentJarPath.value,
+      spray.revolver.RevolverPlugin.autoImport.reJRebelJar.value,
+      (appengineLocalDbPath in appengineDevServer).value,
+      (appengineDebug in appengineDevServer).value,
+      (appengineDebugPort in appengineDevServer).value
     )
 }

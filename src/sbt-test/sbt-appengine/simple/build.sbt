@@ -1,5 +1,3 @@
-import sbtappengine.Plugin.{AppengineKeys => gae}
-
 name := "sample"
 
 scalaVersion := "2.11.11"
@@ -10,16 +8,16 @@ libraryDependencies ++= Seq(
   "org.mortbay.jetty" % "jetty" % "6.1.22" % "container"
 )
 
-appengineSettings
+enablePlugins(AppenginePlugin)
 
-(gae.onStartHooks in gae.devServer in Compile) += { () =>
+(appengineOnStartHooks in appengineDevServer in Compile) += { () =>
   println("hello")
 }
 
-(gae.onStopHooks in gae.devServer in Compile) += { () =>
+(appengineOnStopHooks in appengineDevServer in Compile) += { () =>
   println("bye")
 }
 
 appengineDataNucleusSettings
 
-gae.persistenceApi in gae.enhance in Compile := "JDO"
+appenginePersistenceApi in appengineEnhance in Compile := "JDO"
