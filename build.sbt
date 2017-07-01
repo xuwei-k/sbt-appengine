@@ -32,9 +32,10 @@ resolvers += "spray repo" at "http://repo.spray.cc"
 
 publishMavenStyle := false
 
-publishTo := {
-  if (version.value contains "-SNAPSHOT") Some(Resolver.sbtPluginRepo("snapshots"))
-  else Some(Resolver.sbtPluginRepo("releases"))
-}
-
 credentials += Credentials(Path.userHome / ".ivy2" / ".sbtcredentials")
+
+bintrayRepository := "sbt-plugin-releases"
+
+bintrayOrganization := Some("sbt")
+
+bintrayPackage := "sbt-appengine"
