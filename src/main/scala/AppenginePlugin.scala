@@ -1,5 +1,7 @@
 package sbtappengine
 
+import java.util.Properties
+
 import sbt._
 import spray.revolver.RevolverPlugin
 
@@ -115,10 +117,17 @@ object AppenginePlugin extends AutoPlugin {
         else s.log.info(out.toString)
         ()
       }
-
-    def buildAppengineSdkPath: File = {
-      val sdk = System.getenv("APPENGINE_SDK_HOME")
-      if (sdk == null) sys.error("You need to set APPENGINE_SDK_HOME")
+    
+    def buildAppengineSdkPath(baseDir: File): File = {
+      var sdk = System.getenv("APPENGINE_SDK_HOME")
+      if (sdk == null) {
+        val appengineSettings = baseDir / "appengine.properties"
+        val prop = new Properties()
+        IO.load(prop, appengineSettings)
+        sdk = prop.getProperty("sdkHome")
+      }
+      if (sdk == null) sys.error("You need to set the 'APPENGINE_SDK_HOME' environment variable " +
+        "or the 'sdkHome' property in 'appengine.properties'")
       new File(sdk)
     }
 
@@ -231,10 +240,10 @@ object AppenginePlugin extends AutoPlugin {
       (if (d) Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=" + dp.toString) else Nil) ++
       createJRebelAgentOption(revolver.SysoutLogger, jr).toSeq },
     appengineStopDevServer := RevolverPlugin.autoImport.reStop.value,
-
+    
     appengineApiToolsJar := "appengine-tools-api.jar",
     appengineSdkVersion := AppEngine.buildSdkVersion(appengineLibUserPath.value),
-    appengineSdkPath := AppEngine.buildAppengineSdkPath,
+    appengineSdkPath := AppEngine.buildAppengineSdkPath(baseDirectory.value),
 
     appengineIncludeLibUser := true,
     // this controls appengine classpath, which is used in unmanagedClasspath
