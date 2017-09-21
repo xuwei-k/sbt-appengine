@@ -8,6 +8,8 @@ export environment variables (`JREBEL_PATH` is optional).
     export APPENGINE_SDK_HOME=/Applications/appengine-java-sdk-1.6.2.1
     export JREBEL_PATH=/Applications/ZeroTurnaround/JRebel/jrebel.jar
 
+If you have problems setting the APPENGINE_SDK_HOME environment variable (for example if you're using IntelliJ), then you can instead create a `appengine.properties` file with a single line of `sdkHome=/Applications/appengine-java-sdk-1.6.2.1`.
+
 setup for sbt 0.13
 ------------------
 
