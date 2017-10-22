@@ -1,6 +1,6 @@
 sudo: false
 language: scala
-jdk: oraclejdk7
+jdk: openjdk7
 cache:
   directories:
   - $HOME/gae-sdk
