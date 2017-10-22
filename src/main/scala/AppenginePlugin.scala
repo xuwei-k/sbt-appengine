@@ -167,12 +167,14 @@ object AppenginePlugin extends AutoPlugin {
       colorLogger(streams.log).info("[YELLOW]Starting dev server in the background ...")
       onStart foreach { _.apply() }
       val appProcess = revolver.AppProcess(project, color, logger) {
-        Fork.java.fork(options.javaHome,
-          Seq("-cp", cp.map(_.data.absolutePath).mkString(System.getProperty("file.separator"))) ++
-          options.runJVMOptions ++ startConfig.jvmArgs ++
-          Seq(mainClass.get) ++
-          startConfig.startArgs ++ args,
-          options.workingDirectory, Map(), false, StdoutOutput)
+        val f = new Fork("java", mainClass)
+        val config = options.copy(
+          runJVMOptions =
+            Seq("-cp", cp.map(_.data.absolutePath).mkString(System.getProperty("file.separator"))) ++
+            options.runJVMOptions ++ startConfig.jvmArgs,
+          outputStrategy = Some(StdoutOutput)
+        )
+        f.fork(config, startConfig.startArgs ++ args)
       }
       registerAppProcess(project, appProcess)
       appProcess
