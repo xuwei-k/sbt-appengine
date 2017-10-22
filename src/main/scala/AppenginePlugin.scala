@@ -319,7 +319,7 @@ object AppenginePlugin extends AutoPlugin {
   lazy val webSettings = projectSettings
 
   override lazy val projectSettings: Seq[Def.Setting[_]] =
-    inConfig(Compile)(revolver.RevolverPlugin.settings ++ baseAppengineSettings) ++
+    inConfig(Compile)(WarPlugin.projectSettings ++ revolver.RevolverPlugin.settings ++ baseAppengineSettings) ++
     inConfig(Test)(Seq(
       unmanagedClasspath ++= appengineClasspath.value,
       appengineClasspath := {
