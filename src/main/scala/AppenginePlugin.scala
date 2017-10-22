@@ -110,7 +110,7 @@ object AppenginePlugin extends AutoPlugin {
         val appcfg: Seq[String] = Seq(appcfgPath.absolutePath.toString) ++ args ++ params
         s.log.debug(appcfg.mkString(" "))
         val out = new StringBuffer
-        val exit = Process(appcfg)!<
+        val exit = Process(appcfg).!<
 
         if (exit != 0) {
           s.log.error(out.toString)
