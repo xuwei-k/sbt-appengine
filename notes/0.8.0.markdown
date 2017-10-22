@@ -1,0 +1,8 @@
+- [fix warning](https://github.com/sbt/sbt-appengine/commit/0cadd24981c31db7a2cf61ef1f12511db0393814)
+- [support sbt 1.0](https://github.com/sbt/sbt-appengine/commit/2940a4bd8bd40f7bb400bb61c58ef85f4b0ea6a5)
+- [fix deprecation warning](https://github.com/sbt/sbt-appengine/commit/22082783769048e98ec04a88191677a9d9867a70)
+- [xsbt-web-plugin 4.0.1](https://github.com/sbt/sbt-appengine/commit/de36ba3812a9e213999b4e1c9128be481fadf292)
+- [sbt 0.13.16](https://github.com/sbt/sbt-appengine/commit/343609223a7e61fd713b17de7c21c162d4d957a3)
+- [Update README to include appengine.properties](https://github.com/sbt/sbt-appengine/commit/9b1f1a8969dcb6265cc423f73204f5b36f885b1a)
+- [Allow for reading the Appengine SDK path from a properties file if not in the environment. (#52)](https://github.com/sbt/sbt-appengine/commit/432091ec84ef771870dead5a9359eac297d99394)
+- [sbt-revolver 0.9.0](https://github.com/sbt/sbt-appengine/commit/6bc79730cec7b7861630d517f8c5c72a207d7900)
