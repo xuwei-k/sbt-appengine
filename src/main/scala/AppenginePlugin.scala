@@ -4,6 +4,7 @@ import java.util.Properties
 
 import sbt._
 import spray.revolver.RevolverPlugin
+import sbtappengine.Compat.{Process, _}
 
 @deprecated("will be removed. use enablePlugins(AppenginePlugin)", "0.7.0")
 object Plugin {
@@ -168,12 +169,14 @@ object AppenginePlugin extends AutoPlugin {
       onStart foreach { _.apply() }
       val appProcess = revolver.AppProcess(project, color, logger) {
         val f = new Fork("java", mainClass)
-        val config = options.copy(
-          runJVMOptions =
-            Seq("-cp", cp.map(_.data.absolutePath).mkString(System.getProperty("file.separator"))) ++
-            options.runJVMOptions ++ startConfig.jvmArgs,
-          outputStrategy = Some(StdoutOutput)
-        )
+        val config = options
+          .withRunJVMOptions(
+            Vector("-cp", cp.map(_.data.absolutePath).mkString(System.getProperty("file.separator"))) ++
+            options.runJVMOptions ++ startConfig.jvmArgs
+          )
+          .withOutputStrategy(
+            StdoutOutput
+          )
         f.fork(config, startConfig.startArgs ++ args)
       }
       registerAppProcess(project, appProcess)
@@ -219,11 +222,11 @@ object AppenginePlugin extends AutoPlugin {
       ForkOptions(
         javaHome = javaHome.value,
         outputStrategy = outputStrategy.value,
-        bootJars = scalaInstance.value.jars,
+        bootJars = scalaInstance.value.libraryJar +: scalaInstance.value.allJars.toVector,
         workingDirectory = Some(appengineTemporaryWarPath.value),
-        runJVMOptions = (javaOptions in appengineDevServer).value,
+        runJVMOptions = (javaOptions in appengineDevServer).value.toVector,
         connectInput = false,
-        envVars = Map.empty
+        envVars = Map.empty[String, String]
       )
     },
     RevolverPlugin.autoImport.reLogTag in appengineDevServer := "appengineDevServer",

@@ -1,5 +1,7 @@
 sbtPlugin := true
 
+crossSbtVersions := Seq("1.0.2", "0.13.16")
+
 name := "sbt-appengine"
 
 organization := "com.eed3si9n"
