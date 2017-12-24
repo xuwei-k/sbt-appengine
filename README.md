@@ -10,7 +10,7 @@ export environment variables (`JREBEL_PATH` is optional).
 
 If you have problems setting the APPENGINE_SDK_HOME environment variable (for example if you're using IntelliJ), then you can instead create a `appengine.properties` file with a single line of `sdkHome=/Applications/appengine-java-sdk-1.6.2.1`.
 
-setup for sbt 0.13
+setup for sbt 0.13 and sbt 1.x
 ------------------
 
 put the following in the `project/appengine.sbt`:
