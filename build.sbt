@@ -1,6 +1,6 @@
 sbtPlugin := true
 
-crossSbtVersions := Seq("1.0.4", "0.13.16")
+crossSbtVersions := Seq("1.0.4", "0.13.17")
 
 name := "sbt-appengine"
 
