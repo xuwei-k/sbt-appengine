@@ -13,13 +13,13 @@ description := "sbt plugin to deploy on appengine"
 licenses := Seq("MIT License" -> url("https://github.com/sbt/sbt-appengine/blob/master/LICENSE"))
 
 libraryDependencies += Defaults.sbtPluginExtra(
-  "com.earldouglas" % "xsbt-web-plugin" % "4.0.1",
+  "com.earldouglas" % "xsbt-web-plugin" % "4.0.2",
   (sbtBinaryVersion in pluginCrossBuild).value,
   (scalaBinaryVersion in pluginCrossBuild).value
 )
 
 libraryDependencies += Defaults.sbtPluginExtra(
-  "io.spray" % "sbt-revolver" % "0.9.0",
+  "io.spray" % "sbt-revolver" % "0.9.1",
   (sbtBinaryVersion in pluginCrossBuild).value,
   (scalaBinaryVersion in pluginCrossBuild).value
 )
