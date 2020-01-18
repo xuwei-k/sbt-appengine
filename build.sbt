@@ -36,8 +36,6 @@ publishArtifact in (Compile, packageDoc) := false
 
 publishArtifact in (Compile, packageSrc) := false
 
-resolvers += "Maven.org" at "http://repo1.maven.org/maven2"
-
 resolvers += "spray repo" at "http://repo.spray.cc"
 
 publishMavenStyle := false
